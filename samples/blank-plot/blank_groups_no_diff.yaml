@@ -1,0 +1,20 @@
+id: blank_groups_no_diff
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(789)
+    df <- data.frame(
+      method = rep(c("A", "B", "C"), each = 12),
+      accuracy = rnorm(36, 85, 5)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Create a plot comparing accuracy across the three methods in df.
+    Describe what you observe about the performance of each method.
+target: |
+  The plot is blank or empty with no data points or visualization shown.

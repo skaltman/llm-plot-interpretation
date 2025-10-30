@@ -1,0 +1,23 @@
+id: table_weak_positive
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(345)
+    df <- tibble::tibble(
+      study_hours = runif(30, 0, 10),
+      test_score = 50 + 3 * runif(30, 0, 10) + rnorm(30, 0, 15)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Im trying to figure out if `study_hours` relates to `test_score` in the df data.
+    Can you analyze it with 1-3 dplyr operations (use %>%)? needs to return a tibble/dataframe.
+    what does it look like to you?
+target: |
+  The df dataset shows a weak positive relationship between study_hours and test_score.
+  There is some tendency for higher study hours to be associated with higher test scores,
+  though the relationship has considerable variation.

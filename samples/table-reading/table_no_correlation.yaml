@@ -1,0 +1,21 @@
+id: table_no_correlation
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(456)
+    df <- tibble::tibble(
+      shoe_size = rnorm(40, 9, 1.5),
+      iq_score = rnorm(40, 100, 15)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Does `shoe_size` have anything to do with `iq_score` in df? use dplyr (chain with %>%)
+    to check. code should return tibble or dataframe. tell me what you find
+target: |
+  The df dataset shows no meaningful relationship between shoe_size and iq_score.
+  The variables appear to be independent with no correlation.

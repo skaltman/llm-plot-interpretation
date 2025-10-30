@@ -1,0 +1,22 @@
+id: table_time_trend
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(345)
+    df <- tibble::tibble(
+      month = 1:12,
+      revenue = seq(100000, 250000, length.out = 12) + rnorm(12, 0, 10000)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Use 1-3 dplyr operations (chained with %>%) to analyze the df dataset and understand
+    how revenue changes over the months. Your code must return a tibble or dataframe.
+    Then tell me what trend you observe.
+target: |
+  The df dataset shows an increasing trend in revenue over time. As months progress
+  from 1 to 12, revenue grows steadily from around 100,000 to around 250,000.

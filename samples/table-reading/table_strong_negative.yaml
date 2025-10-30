@@ -1,0 +1,22 @@
+id: table_strong_negative
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(234)
+    df <- tibble::tibble(
+      temperature = seq(0, 50, length.out = 25),
+      efficiency = 100 - 1.8 * seq(0, 50, length.out = 25) + rnorm(25, 0, 3)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    can you look at the `temperature` and `efficiency` columns in df and see if theres
+    a relationship? use some dplyr stuff (chained with %>%) and make sure the code returns
+    a tibble or dataframe. what do you see?
+target: |
+  The df dataset shows a clear negative relationship between temperature and efficiency.
+  As temperature increases, efficiency decreases.

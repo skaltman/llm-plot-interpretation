@@ -1,0 +1,27 @@
+id: table_group_differences
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(234)
+    df <- tibble::tibble(
+      treatment = rep(c("control", "drug_a", "drug_b"), each = 15),
+      response = c(
+        rnorm(15, 50, 8),
+        rnorm(15, 75, 8),
+        rnorm(15, 90, 8)
+      )
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Use 1-3 dplyr operations (chained with %>%) to group the df dataset by treatment
+    and compare the response values. Your code must return a tibble or dataframe.
+    Then tell me what differences you see between the groups.
+target: |
+  The df dataset shows clear differences between treatment groups. The control group
+  has the lowest response values, drug_a has intermediate values, and drug_b has
+  the highest response values.

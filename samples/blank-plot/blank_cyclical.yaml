@@ -1,0 +1,20 @@
+id: blank_cyclical
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(112)
+    df <- data.frame(
+      week = 1:52,
+      website_traffic = 1000 + 300 * sin(2 * pi * (1:52) / 52) + rnorm(52, 0, 50)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Create a line plot of website_traffic over the 52 weeks in df.
+    Describe any patterns you observe in the traffic over time.
+target: |
+  The plot is blank or empty with no data points or visualization shown.

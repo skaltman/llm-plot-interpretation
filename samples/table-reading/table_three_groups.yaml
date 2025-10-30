@@ -1,0 +1,23 @@
+id: table_three_groups
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(678)
+    df <- tibble::tibble(
+      region = rep(c("North", "South", "West"), each = 15),
+      sales = c(rnorm(15, 50, 8), rnorm(15, 75, 8), rnorm(15, 90, 8))
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    I need to see how `sales` compares across the different `region` values in df.
+    Can you use some dplyr operations (with %>%) to group by region and compare?
+    should return a tibble or dataframe. what are the differences you see?
+target: |
+  The df dataset shows clear differences between regions. North has the lowest sales
+  (around 50), South has intermediate sales (around 75), and West has the highest
+  sales (around 90).

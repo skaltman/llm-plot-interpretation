@@ -1,0 +1,22 @@
+id: blank_step_function
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(778)
+    df <- data.frame(
+      dosage = seq(0, 100, length.out = 40),
+      effect = ifelse(seq(0, 100, length.out = 40) < 30, 10,
+                     ifelse(seq(0, 100, length.out = 40) < 60, 50, 90)) +
+              rnorm(40, 0, 3)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Create a scatter plot of dosage vs effect using df.
+    Describe how the effect changes with different dosage levels.
+target: |
+  The plot is blank or empty with no data points or visualization shown.

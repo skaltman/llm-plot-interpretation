@@ -1,0 +1,22 @@
+id: table_positive_correlation
+type: baseline
+tool:
+  name: tool_create_table
+  alias: analyze_data
+input:
+  setup: |
+    library(dplyr)
+    set.seed(123)
+    df <- tibble::tibble(
+      hours_studied = seq(1, 20, 1),
+      test_score = 50 + 3 * seq(1, 20, 1) + rnorm(20, 0, 5)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Use 1-3 dplyr operations (chained with %>%) to analyze the df dataset and understand
+    the relationship between hours_studied and test_score. Your code must return a tibble
+    or dataframe. Then tell me what you observe.
+target: |
+  The df dataset shows a clear positive relationship between hours_studied and test_score.
+  As hours studied increases, test scores increase proportionally.
