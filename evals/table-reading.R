@@ -29,18 +29,3 @@ results <- run_eval(
   name = "table_reading_full",
   view = FALSE
 )
-
-# Compare accuracy by model
-results |>
-  group_by(model) |>
-  summarize(
-    n_samples = n(),
-    accuracy = mean(score == "C")
-  )
-
-# View all results
-results
-
-# Access original Task objects if needed
-tasks <- attr(results, "tasks")
-tasks[[1]]$accuracy()
