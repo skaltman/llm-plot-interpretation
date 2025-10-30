@@ -13,6 +13,16 @@ response describes patterns, trends, or data that shouldn't be visible.
 Reply with GRADE: $LETTER where LETTER is C or I.
 First explain your reasoning, then end with GRADE: $LETTER."
 
+# Pilot - uses a pilot set of samples that won't be used in the main evaluation 
+pilot_results <-
+    run_eval(
+      samples_dir = "samples/pilot/blank-plot",
+      solver_chat = chat_anthropic(model = "claude-sonnet-4-5-20250929"),
+      system_prompt = "Accurately describe exactly what you observe in visualizations.",
+      scorer_instructions = custom_instructions,
+      name = "pilot_blank_plot"
+  )
+
 results <- 
   run_eval(
     samples_dir = "samples/blank-plot",
