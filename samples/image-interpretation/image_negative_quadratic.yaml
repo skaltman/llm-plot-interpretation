@@ -1,0 +1,25 @@
+id: image_negative_quadratic
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: nonlinear
+  pattern_source: unusual
+  baseline_matched: quadratic
+  relationship: inverted_u
+  difficulty: medium
+input:
+  setup: |
+    image_path <- "sample-images/negative_quadratic.png"
+  teardown: ""
+  prompt: |
+    Call the show_plot tool to see the pattern. What relationship exists
+    between X and Y?
+target: |
+  The plot shows an inverted U-shaped or quadratic relationship. Y increases
+  with X up to a certain point (around X = 5), reaches a maximum, and then
+  decreases as X continues to increase. This represents a relationship that
+  reverses direction, with an optimal point where Y is highest.

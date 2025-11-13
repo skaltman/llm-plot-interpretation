@@ -1,0 +1,25 @@
+id: image_logarithmic
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: nonlinear
+  pattern_source: unusual
+  baseline_matched: positive_correlation
+  relationship: saturation
+  difficulty: easy
+input:
+  setup: |
+    image_path <- "sample-images/logarithmic.png"
+  teardown: ""
+  prompt: |
+    Call the show_plot tool to display the pattern. What relationship
+    do you observe between X and Y?
+target: |
+  The plot shows a positive relationship where Y increases with X initially,
+  but the rate of increase slows and Y appears to level off or plateau at
+  higher values of X. This is a non-linear, logarithmic, saturating relationship where
+  Y approaches an asymptote or maximum value.

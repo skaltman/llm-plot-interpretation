@@ -1,0 +1,23 @@
+id: image_no_correlation
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: none
+  relationship: no_correlation
+  difficulty: medium
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/no_correlation.png"
+  teardown: ""
+  prompt: |
+    Use the show_plot tool to view the chart. Describe what relationship
+    you see between X and Y.
+target: |
+  The plot shows no clear relationship or correlation between X and Y.
+  The Y values appear randomly scattered with no systematic pattern
+  relative to X. There is no correlation between the two variables.

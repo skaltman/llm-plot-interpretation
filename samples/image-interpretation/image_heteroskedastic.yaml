@@ -1,0 +1,26 @@
+id: image_heteroskedastic
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: linear
+  pattern_source: unusual
+  baseline_matched: positive_correlation
+  relationship: heteroskedastic
+  difficulty: medium
+input:
+  setup: |
+    image_path <- "sample-images/heteroskedastic.png"
+  teardown: ""
+  prompt: |
+    Use the show_plot tool to view the relationship. Describe the pattern
+    you observe between X and Y.
+target: |
+  The plot shows a positive linear relationship between X and Y, but with
+  increasing variability or spread at higher values of X. This creates a
+  funnel or fan shape where the points are tightly clustered at low X values
+  but become more dispersed at high X values. This is a heteroskedastic
+  pattern where variance increases with X.

@@ -1,0 +1,23 @@
+id: image_negative_correlation
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: linear
+  relationship: negative
+  difficulty: easy
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/negative_correlation.png"
+  teardown: ""
+  prompt: |
+    Use the show_plot tool to view the data visualization. What relationship
+    do you observe between temperature and efficiency?
+target: |
+  The plot shows a clear negative relationship between temperature and efficiency.
+  As temperature increases, efficiency decreases. There is a strong negative
+  correlation, with efficiency declining as temperature rises.

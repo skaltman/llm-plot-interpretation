@@ -1,0 +1,25 @@
+id: image_cubic
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: nonlinear
+  pattern_source: unusual
+  baseline_matched: quadratic
+  relationship: cubic
+  difficulty: medium
+input:
+  setup: |
+    image_path <- "sample-images/cubic.png"
+  teardown: ""
+  prompt: |
+    Call the show_plot tool to view the data. Describe the relationship
+    you observe between X and Y.
+target: |
+  The plot shows an S-shaped, sigmoidal, or cubic relationship between X and Y.
+  The pattern curves in both directions - Y increases at low X values,
+  decreases/stays steady in the middle range, and increases again at high X values.
+  This is a non-linear relationship with multiple inflection points.

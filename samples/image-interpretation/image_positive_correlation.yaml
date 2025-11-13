@@ -1,0 +1,23 @@
+id: image_positive_correlation
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: linear
+  relationship: positive
+  difficulty: easy
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/positive_correlation.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then describe
+    what relationship you observe between X and Y.
+target: |
+  The plot shows a clear positive linear relationship between X and Y.
+  As X increases, Y increases proportionally. There is a strong positive
+  correlation between the two variables.

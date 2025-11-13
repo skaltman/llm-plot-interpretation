@@ -1,0 +1,24 @@
+id: image_group_differences
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: boxplot
+  pattern_type: categorical
+  relationship: group_differences
+  difficulty: easy
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/group_differences.png"
+  teardown: ""
+  prompt: |
+    Call the show_plot tool to see the visualization. What patterns do you
+    observe in the values across the different groups?
+target: |
+  The boxplot shows clear differences in values across the three groups.
+  Group A has the lowest values, Group B has intermediate values, and
+  Group C has the highest values. There is a clear ordering with Group C
+  consistently higher than Group B, which is higher than Group A.

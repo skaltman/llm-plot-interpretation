@@ -1,0 +1,26 @@
+id: image_matched_bimodal_clusters
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: clusters
+  relationship: bimodal
+  difficulty: medium
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/baseline/bimodal_clusters.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then briefly describe what you observe.
+target: |
+  The plot shows clear bimodal clustering with a visible gap
+  between the two groups, with the first cluster in the lower-left region
+  and the second cluster in the upper-right region. A successful submission accurately describes that
+  there are two distinct clusters or groups in the data, or that the data shows bimodal
+  clustering, or that points form two separated groups, or that there is a clear gap between
+  two populations. Submissions may note the approximate locations of the clusters or describe
+  them as distinct clouds of points.

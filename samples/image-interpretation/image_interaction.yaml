@@ -1,0 +1,27 @@
+id: image_interaction
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: interaction
+  pattern_source: unusual
+  baseline_matched: group_differences
+  relationship: opposite_slopes
+  difficulty: hard
+input:
+  setup: |
+    image_path <- "sample-images/interaction.png"
+  teardown: ""
+  prompt: |
+    Call show_plot to view the data. The data includes two groups (A and B).
+    Describe the relationship between X and Y for each group.
+target: |
+  The plot shows an interaction effect where the two groups have opposite
+  relationships. Group A shows a positive relationship
+  where Y increases with X. Group B shows a negative
+  relationship where Y decreases with X. The groups have different slopes
+  that go in opposite directions, demonstrating that the relationship
+  between X and Y depends on which group you're examining.

@@ -1,0 +1,26 @@
+id: image_discontinuity
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: nonlinear
+  pattern_source: unusual
+  baseline_matched: positive_correlation
+  relationship: discontinuous
+  difficulty: medium
+input:
+  setup: |
+    image_path <- "sample-images/discontinuity.png"
+  teardown: ""
+  prompt: |
+    Use the show_plot tool to see the chart. What pattern do you observe
+    in the relationship between X and Y?
+target: |
+  The plot shows a positive linear relationship with a discontinuity or
+  sudden step. Y increases steadily with X, but there is a sudden jump
+  or increase at approximately X = 5, after which the linear trend continues
+  at a higher level. This suggests a relationship with a breakpoint or
+  structural change.

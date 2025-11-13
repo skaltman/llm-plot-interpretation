@@ -1,0 +1,23 @@
+id: image_matched_categorical_difference
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: boxplot
+  pattern_type: categorical
+  relationship: group_differences
+  difficulty: easy
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/baseline/categorical_difference.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then concisely tell me what patterns you observe.
+target: |
+  The plot shows clear differences between groups. Group A has the
+  lowest measure values, group B has intermediate values, and group C has
+  the highest values. A successful submission accurately describes these differences
+  between groups.

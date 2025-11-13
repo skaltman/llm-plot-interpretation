@@ -1,0 +1,24 @@
+id: image_quadratic
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: nonlinear
+  relationship: quadratic
+  difficulty: hard
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/quadratic.png"
+  teardown: ""
+  prompt: |
+    Call the show_plot tool to display the pattern. What kind of
+    relationship do you observe between X and Y?
+target: |
+  The plot shows a U-shaped or quadratic relationship between X and Y.
+  Y values are highest at both extremes of X (both negative and positive)
+  and lowest near the middle (around X = 0). This is a non-linear,
+  curved relationship.

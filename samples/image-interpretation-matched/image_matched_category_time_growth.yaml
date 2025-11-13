@@ -1,0 +1,23 @@
+id: image_matched_category_time_growth
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 2
+  geom_type: line_point
+  pattern_type: temporal
+  relationship: positive_with_groups
+  difficulty: medium
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/baseline/category_time_growth.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then succinctly tell me what patterns you see.
+target: |
+  The plot shows that value increases with time across all categories.
+  Some categories (D, C) have both higher starting values and steeper growth
+  compared to other categories (B, A). A successful submission accurately describes
+  these differences in both baseline value and growth rates across categories.

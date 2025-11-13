@@ -1,0 +1,25 @@
+id: image_matched_negative_correlation
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: point
+  pattern_type: linear
+  relationship: negative
+  difficulty: easy
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/baseline/negative_correlation.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then briefly tell me what relationship you see in the plot.
+target: |
+  The plot shows a clear negative linear relationship between time and measure.
+  Measure decreases as time increases. A successful submission accurately describes
+  that there is a negative correlation between time and measure, or that measure
+  decreases as time increases, or that the relationship is inverse/negative, or
+  that higher time values correspond to lower measure values, or that there is
+  a downward trend over time.
