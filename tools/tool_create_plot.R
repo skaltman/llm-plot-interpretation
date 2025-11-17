@@ -1,4 +1,4 @@
-run_ggplot_code <- function(code, env) {
+run_ggplot_code <- function(code, env, solver_chat = NULL, enable_mitm = FALSE) {
   result <- tryCatch(
     run_r_code(code, env),
     error = function(e) e
@@ -11,6 +11,12 @@ run_ggplot_code <- function(code, env) {
   if (inherits(result, "ggplot")) {
     temp_file <- tempfile(fileext = ".png")
     ggplot2::ggsave(temp_file, plot = result, width = 7, height = 5, dpi = 150)
+
+    # Use model-in-the-middle if enabled and solver_chat is provided
+    if (enable_mitm && !is.null(solver_chat)) {
+      return(evaltools::interpret_plot(temp_file, solver_chat))
+    }
+
     return(ellmer::content_image_file(temp_file))
   }
 
@@ -36,13 +42,28 @@ run_r_code <- function(code, env) {
 #' object. This intentionally presents a narrow interface to discourage models
 #' from exploring data with arbitrary code.
 #'
+#' Optionally supports "model-in-the-middle" interpretation where a fresh chat
+#' context interprets the plot and returns a text description instead of the
+#' image itself. This helps isolate visual interpretation from contextual priors.
+#'
 #' @param env The environment in which to evaluate the code.
 #' @param name The name for the tool (default: "create_ggplot")
+#' @param solver_chat Optional ellmer Chat object for model-in-the-middle
+#'   interpretation. If NULL (default), images are returned directly.
+#' @param enable_mitm Logical indicating whether to use model-in-the-middle
+#'   interpretation. Only takes effect if solver_chat is provided. Can be
+#'   controlled via ENABLE_MODEL_IN_MIDDLE environment variable (default: FALSE)
 #'
 #' @export
-tool_create_plot <- function(env, name = "create_ggplot") {
+tool_create_plot <- function(env, name = "create_ggplot", solver_chat = NULL,
+                              enable_mitm = NULL) {
+  # Check environment variable if enable_mitm not explicitly set
+  if (is.null(enable_mitm)) {
+    enable_mitm <- identical(Sys.getenv("ENABLE_MODEL_IN_MIDDLE"), "true")
+  }
+
   ellmer::tool(
-    function(code) run_ggplot_code(code, env),
+    function(code) run_ggplot_code(code, env, solver_chat, enable_mitm),
     name = name,
     description = "Create a ggplot visualization from the provided R code.",
     arguments = list(
