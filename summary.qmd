@@ -18,7 +18,7 @@ dir_blank <- here::here("results/plot-blank/")
 dir_baseline_prompt <- here::here("results/plot-baseline-prompt-memo")
 
 bind_results <- function(dir) {
-  fs::dir_map(dir, read_rds) |> 
+  fs::dir_map(dir, read_rds, type = "file") |> 
   purrr::list_rbind() |> 
   mutate(
     score = fct_recode(
@@ -35,7 +35,26 @@ image_only_matched <- bind_results(dir_image_matched)
 blank <- bind_results(dir_blank)
 
 baseline_prompt <- bind_results(dir_baseline_prompt) 
-bluffbench <- read_rds("results/bluffbench-prompt-memo/sonnet.rds")
+
+# Bluffench
+bluffbench_memo_prompt <- 
+  read_rds("results/bluffbench-prompt-memo/sonnet.rds") |> 
+  mutate(intervention = "Memo prompt") 
+
+bluffbench_thinking <-
+  read_rds("results/bluffbench-prompt-memo/tsk_claude_4_5_sonnet_thinking.rds")$get_samples() |> 
+  mutate(
+    intervention = "Thinking",
+    model = "claude_4_5_sonnet"
+  ) |> 
+  select(id, epoch, score, intervention, type, model)
+
+bluffbench <- 
+  bind_rows(
+    bluffbench_memo_prompt,
+    bluffbench_thinking,
+    bluffbench::bluff_results |> mutate(intervention = "None")
+  )
 ```
 
 ```{r theme-setup}
@@ -252,18 +271,13 @@ blank |>
 
 ## Bluffbench
 
-
 ```{r}
 bluffbench |> 
-  mutate(prompt = "Memo") |> 
-  bind_rows(
-    bluffbench::bluff_results |> mutate(prompt = "Generic")
-  ) |> 
   filter(
     type != "baseline", 
     stringr::str_detect(model, "[Ss]onnet")
   ) |> 
-  ggplot(aes(y = prompt, fill = score)) +
+  ggplot(aes(y = intervention, fill = score)) +
   geom_bar(position = "fill") +
   facet_wrap(vars(type)) +
   scale_fill_manual(
@@ -300,3 +314,8 @@ bluffbench |>
 ![](images/smoothline-02.png)
 
 :::
+
+## Thinking
+
+
+## Model-in-the-middle
