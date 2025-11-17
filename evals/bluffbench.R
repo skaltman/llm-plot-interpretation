@@ -9,9 +9,7 @@ vitals::vitals_log_dir_set("./logs/bluffbench")
 # Read memo prompt
 prompt <- readr::read_file("prompts/prompt-thinking.md")
 
-mocked_samples <- which(bluff_dataset$type == "mocked")
-
-tsk <- bluff_task(epochs = 3, samples = mocked_samples)
+tsk <- bluff_task(epochs = 3)
 
 # claude 4.5 sonnet -------------------------------------------------
 tsk_claude_4_5_sonnet_prompt_thinking <- tsk$clone()
@@ -20,15 +18,15 @@ tsk_claude_4_5_sonnet_prompt_thinking$eval(
     model = "claude-sonnet-4-5-20250929",
     system_prompt = prompt,
     api_args = list(
-          thinking = list(type = "enabled", budget_tokens = 5000),
-          max_tokens = 8192
+      thinking = list(type = "enabled", budget_tokens = 5000),
+      max_tokens = 8192
     )
   )
 )
 
 saveRDS(
-  tsk_claude_4_5_sonnet_prompt_thinking, 
-  file = "results/bluffbench-prompt-memo/tsk_claude_4_5_sonnet_thinking_mocked.rds"
+  tsk_claude_4_5_sonnet_prompt_thinking,
+  file = "results/bluffbench-prompt-memo/tsk_claude_4_5_sonnet_thinking.rds"
 )
 
 cli::cli_inform("Sonnet finished.")
@@ -42,7 +40,10 @@ tsk_gemini_2_5_pro_prompt_memo$eval(
   )
 )
 
-saveRDS(tsk_gemini_2_5_pro_prompt_memo, file = "results/bluffbench-prompt-memo/tsk_gemini_2_5_pro_thinking.rds")
+saveRDS(
+  tsk_gemini_2_5_pro_prompt_memo,
+  file = "results/bluffbench-prompt-memo/tsk_gemini_2_5_pro_thinking.rds"
+)
 
 cli::cli_inform("Gemini finished.")
 
@@ -55,7 +56,10 @@ tsk_gpt_5_prompt_memo$eval(
   )
 )
 
-saveRDS(tsk_gpt_5_prompt_memo, file = "results/bluffbench-prompt-memo/tsk_gpt_5.rds")
+saveRDS(
+  tsk_gpt_5_prompt_memo,
+  file = "results/bluffbench-prompt-memo/tsk_gpt_5.rds"
+)
 
 cli::cli_inform("GPT-5 finished.")
 
@@ -66,7 +70,11 @@ cli::cli_inform("GPT-5 finished.")
 library(tidyverse)
 
 # Load task objects from results directory
-task_files <- list.files("results/bluffbench-prompt-memo", pattern = "\\.rds$", full.names = TRUE)
+task_files <- list.files(
+  "results/bluffbench-prompt-memo",
+  pattern = "\\.rds$",
+  full.names = TRUE
+)
 
 tasks <- list()
 for (task_file in task_files) {
@@ -79,7 +87,7 @@ bluffbench_results_raw <- vitals::vitals_bind(!!!tasks)
 
 # Process to match your other results format
 bluffbench_results <-
-  bluffbench_results_raw |> 
-  rename(model = task) |> 
-  mutate(type = purrr::map_chr(metadata, ~ .x$type)) |> 
+  bluffbench_results_raw |>
+  rename(model = task) |>
+  mutate(type = purrr::map_chr(metadata, ~ .x$type)) |>
   write_rds("results/bluffbench-prompt-memo/sonnet.rds")
