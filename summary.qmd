@@ -15,7 +15,9 @@ dir_image <- here::here("results/image-interpretation/")
 dir_baseline <- here::here("results/plot-baseline")
 dir_image_matched <- here::here("results/image-interpretation-matched/")
 dir_blank <- here::here("results/plot-blank/")
-dir_baseline_prompt <- here::here("results/plot-baseline-prompt-memo")
+dir_baseline_memo_prompt <- here::here("results/plot-baseline-prompt-memo")
+dir_baseline_thinking <- here::here("results/plot-baseline-thinking")
+dir_baseline_mitm <- here::here("results/plot-baseline-mitm")
 
 bind_results <- function(dir) {
   fs::dir_map(dir, read_rds, type = "file") |> 
@@ -34,7 +36,9 @@ baseline <- bind_results(dir_baseline)
 image_only_matched <- bind_results(dir_image_matched)
 blank <- bind_results(dir_blank)
 
-baseline_prompt <- bind_results(dir_baseline_prompt) 
+baseline_memo_prompt <- bind_results(dir_baseline_memo_prompt) 
+baseline_thinking <- bind_results(dir_baseline_thinking) 
+baseline_mitm <- bind_results(dir_baseline_mitm)
 
 # Bluffench
 bluffbench_memo_prompt <- 
@@ -42,7 +46,7 @@ bluffbench_memo_prompt <-
   mutate(intervention = "Memo prompt") 
 
 bluffbench_thinking <-
-  read_rds("results/bluffbench-prompt-memo/tsk_claude_4_5_sonnet_thinking.rds")$get_samples() |> 
+  read_rds("results/bluffbench-thinking/tsk_claude_4_5_sonnet_thinking.rds")$get_samples() |> 
   mutate(
     intervention = "Thinking",
     model = "claude_4_5_sonnet"
@@ -54,6 +58,13 @@ bluffbench <-
     bluffbench_memo_prompt,
     bluffbench_thinking,
     bluffbench::bluff_results |> mutate(intervention = "None")
+  ) |> 
+  mutate(
+    score = fct_recode(
+      score,
+      "Correct" = "C",
+      "Incorrect" = "I"
+    )
   )
 ```
 
@@ -120,7 +131,7 @@ baseline |>
 baseline |> 
   filter(model == "sonnet-4.5") |> 
   mutate(prompt = "Generic") |> 
-  bind_rows(baseline_prompt |> mutate(prompt = "Memo")) |> 
+  bind_rows(baseline_memo_prompt |> mutate(prompt = "Memo")) |> 
   ggplot(aes(y = prompt, fill = score)) +
   geom_bar(position = "fill") +
   scale_fill_manual(
@@ -269,7 +280,19 @@ blank |>
 -->
 
 
-## Bluffbench
+## Comparing interventions
+
+```{r assemble-baseline}
+baseline_comparison <-
+  bind_rows(
+    baseline |> mutate(intervention = "None"),
+    baseline_memo_prompt |> mutate(intervention = "Memo prompt"),
+    baseline_thinking |> mutate(intervention = "Thinking"),
+    baseline_mitm |> mutate(intervention = "Model-in-the-middle")
+  ) |> 
+  filter(stringr::str_detect(model, "[Ss]onnet")) |> 
+  mutate(type = "baseline")
+```
 
 ```{r}
 bluffbench |> 
@@ -277,19 +300,30 @@ bluffbench |>
     type != "baseline", 
     stringr::str_detect(model, "[Ss]onnet")
   ) |> 
+  bind_rows(baseline_comparison) |> 
+  mutate(
+    intervention = 
+      fct_relevel(
+        intervention,
+        "Model-in-the-middle",
+        "Thinking",
+        "Memo prompt",
+        "None"
+      )
+  ) |> 
   ggplot(aes(y = intervention, fill = score)) +
   geom_bar(position = "fill") +
   facet_wrap(vars(type)) +
   scale_fill_manual(
     breaks = rev,
-    values = c("C" = "#67a9cf", "I" = "#ef8a62")
+    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
   ) +
   scale_x_continuous(labels = scales::percent) +
   labs(
     x = "Percent",
     y = "Prompt",
-    title = "LLMs see what they expect to see",
-    subtitle = "Prompting slightly improves performance"
+    title = "Intervention comparison",
+    subtitle = "For bluffbench and baseline (code+image) tasks"
   )
 ```
 
