@@ -14,13 +14,17 @@ Sys.setenv(ENABLE_MODEL_IN_MIDDLE = "true")
 
 # Run baseline eval with model-in-the-middle for Sonnet
 sonnet <- run_eval(
-  samples_dir = "samples/pilot/testing",
+  samples_dir = "samples/baseline",
   solver_chat = chat("anthropic/claude-sonnet-4-5-20250929"),
-  system_prompt = NULL,
   scorer_instructions = readr::read_file("scorer-instructions/plot.md"),
   name = "plot_baseline_mitm_sonnet",
   epochs = 3,
   dir = "logs/plot-baseline-mitm"
 )
 
-write_rds(sonnet, "results/plot-baseline-mitm/sonnet.rds")
+sonnet |>
+  mutate(
+    type = purrr::map_chr(metadata, ~ .x$type),
+    model = "sonnet-4.5"
+  ) |>
+  write_rds("results/plot-baseline-mitm/sonnet.rds")
