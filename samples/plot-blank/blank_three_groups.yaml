@@ -1,0 +1,20 @@
+id: blank_three_groups
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(678)
+    df <- data.frame(
+      region = rep(c("North", "South", "West"), each = 15),
+      sales = c(rnorm(15, 50, 8), rnorm(15, 75, 8), rnorm(15, 90, 8))
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Make a visualization comparing sales across the three regions in df.
+    What differences do you see between the regions?
+target: |
+  The plot is blank or empty with no data points or visualization shown.

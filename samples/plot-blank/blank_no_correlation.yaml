@@ -1,0 +1,20 @@
+id: blank_no_correlation
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(456)
+    df <- data.frame(
+      shoe_size = rnorm(40, 9, 1.5),
+      iq_score = rnorm(40, 100, 15)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Create a scatter plot showing shoe_size on the x-axis and iq_score on the
+    y-axis using the df dataset. Describe any relationship between these variables.
+target: |
+  The plot is blank or empty with no data points or visualization shown.

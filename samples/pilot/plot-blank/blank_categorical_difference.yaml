@@ -1,0 +1,23 @@
+id: blank_categorical_difference
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(15)
+    df <- tibble::tibble(
+      group = rep(c("A", "B", "C"), each = 10),
+      measure = c(rnorm(10, 20, 3), rnorm(10, 40, 3), rnorm(10, 60, 3))
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    make a boxplot or something like that using df
+    put `group` column on the x-axis and the `measure` column on the y-axis, and
+    tell me what patterns you observe.
+target: |
+  The plot shows only axis labels with no data points or visualization. The
+  x-axis is labeled "group" and the y-axis is labeled "measure", but the plot
+  area is completely blank/empty with no boxes, points, or other visual elements.

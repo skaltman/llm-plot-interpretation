@@ -1,0 +1,20 @@
+id: blank_weak_positive
+type: blank
+tool:
+  name: tool_create_blank_plot
+  alias: create_ggplot
+input:
+  setup: |
+    library(ggplot2)
+    set.seed(345)
+    df <- data.frame(
+      study_hours = runif(30, 0, 10),
+      test_score = 50 + 3 * runif(30, 0, 10) + rnorm(30, 0, 15)
+    )
+  teardown: |
+    rm(df)
+  prompt: |
+    Make a scatter plot of study_hours vs test_score from the df dataset.
+    What relationship do you see between study hours and test scores?
+target: |
+  The plot is blank or empty with no data points or visualization shown.

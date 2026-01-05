@@ -15,18 +15,20 @@ dir_image <- here::here("results/image-interpretation/")
 dir_baseline <- here::here("results/plot-baseline")
 dir_image_matched <- here::here("results/image-interpretation-matched/")
 dir_blank <- here::here("results/plot-blank/")
-dir_baseline_prompt <- here::here("results/plot-baseline-prompt-memo")
+dir_baseline_memo_prompt <- here::here("results/plot-baseline-prompt-memo")
+dir_baseline_thinking <- here::here("results/plot-baseline-thinking")
+dir_baseline_mitm <- here::here("results/plot-baseline-mitm")
 
 bind_results <- function(dir) {
-  fs::dir_map(dir, read_rds) |> 
-  purrr::list_rbind() |> 
-  mutate(
-    score = fct_recode(
-      score,
-      "Correct" = "C",
-      "Incorrect" = "I"
+  fs::dir_map(dir, read_rds, type = "file") |>
+    purrr::list_rbind() |>
+    mutate(
+      score = fct_recode(
+        score,
+        "Correct" = "C",
+        "Incorrect" = "I"
+      )
     )
-  )
 }
 
 image_only <- bind_results(dir_image)
@@ -34,12 +36,47 @@ baseline <- bind_results(dir_baseline)
 image_only_matched <- bind_results(dir_image_matched)
 blank <- bind_results(dir_blank)
 
-baseline_prompt <- bind_results(dir_baseline_prompt) 
-bluffbench <- read_rds("results/bluffbench-prompt-memo/sonnet.rds")
+baseline_memo_prompt <- bind_results(dir_baseline_memo_prompt)
+baseline_thinking <- bind_results(dir_baseline_thinking)
+baseline_mitm <- bind_results(dir_baseline_mitm)
+```
+
+```{r setup-bluffbench}
+bluffbench_mitm <-
+  read_rds("results/bluffbench-mitm/sonnet.rds") |>
+  mutate(intervention = "Model-in-the-middle")
+
+bluffbench_memo_prompt <-
+  read_rds("results/bluffbench-prompt-memo/sonnet.rds") |>
+  mutate(intervention = "Memo prompt")
+
+bluffbench_thinking <-
+  read_rds(
+    "results/bluffbench-thinking/tsk_claude_4_5_sonnet_thinking.rds"
+  )$get_samples() |>
+  mutate(
+    intervention = "Thinking",
+    model = "claude_4_5_sonnet"
+  ) |>
+  select(id, epoch, score, intervention, type, model)
+
+bluffbench <-
+  bind_rows(
+    bluffbench_memo_prompt,
+    bluffbench_thinking,
+    bluffbench::bluff_results |> mutate(intervention = "None")
+  ) |>
+  mutate(
+    score = fct_recode(
+      score,
+      "Correct" = "C",
+      "Incorrect" = "I"
+    )
+  ) |>
+  bind_rows(bluffbench_mitm)
 ```
 
 ```{r theme-setup}
-#| echo: false
 theme_set(
   theme_bw() +
     theme(
@@ -53,13 +90,30 @@ theme_set(
 )
 ```
 
+```{r plot-helpers}
+plot_heatmap <- function(data, facet_var) {
+  data |>
+    ggplot(aes(x = factor(epoch), y = id, fill = score)) +
+    geom_tile(color = "white", linewidth = 1) +
+    facet_wrap(vars({{ facet_var }}), ncol = 3) +
+    scale_fill_manual(
+      values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
+    ) +
+    labs(
+      x = "Epoch",
+      y = "Sample",
+      fill = "Score"
+    )
+}
+```
+
 ## Model writes code, then interprets plot
 
 ::: {.panel-tabset}
 
 ### Overall
 ```{r plot-overall}
-baseline |> 
+baseline |>
   ggplot(aes(y = model, fill = score)) +
   geom_bar(position = "fill") +
   scale_fill_manual(
@@ -78,30 +132,18 @@ baseline |>
 ### By sample
 
 ```{r}
-baseline |> 
-  mutate(model = fct_rev(model)) |> 
-  ggplot(aes(x = factor(epoch), y = id, fill = score)) +
-  geom_tile(color = "white", linewidth = 1) +
-  facet_wrap(vars(model), ncol = 3) +
-  scale_fill_manual(
-    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-  ) +
-  labs(
-    x = "Epoch",
-    y = "Sample",
-    fill = "Score"
-  ) +
-  theme_minimal() +
-  theme(panel.grid = element_blank())
+baseline |>
+  mutate(model = fct_rev(model)) |>
+  plot_heatmap(model)
 ```
 
 ### By prompt
 
 ```{r}
-baseline |> 
-  filter(model == "sonnet-4.5") |> 
-  mutate(prompt = "Generic") |> 
-  bind_rows(baseline_prompt |> mutate(prompt = "Memo")) |> 
+baseline |>
+  filter(model == "sonnet-4.5") |>
+  mutate(prompt = "Generic") |>
+  bind_rows(baseline_memo_prompt |> mutate(prompt = "Memo")) |>
   ggplot(aes(y = prompt, fill = score)) +
   geom_bar(position = "fill") +
   scale_fill_manual(
@@ -125,7 +167,7 @@ baseline |>
 
 ### By model
 
-```{r}
+```{r image-matched-barplot}
 image_only_matched %>%
   ggplot(aes(y = model, fill = score)) +
   geom_bar(position = "fill") +
@@ -144,22 +186,10 @@ image_only_matched %>%
 
 ### By sample
 
-```{r}
-image_only_matched |> 
-  mutate(model = fct_rev(model)) |> 
-  ggplot(aes(x = factor(epoch), y = id, fill = score)) +
-  geom_tile(color = "white", linewidth = 1) +
-  facet_wrap(~model, ncol = 3) +
-  scale_fill_manual(
-    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-  ) +
-  labs(
-    x = "Epoch",
-    y = "Sample",
-    fill = "Score"
-  ) +
-  theme_minimal() +
-  theme(panel.grid = element_blank())
+```{r image-matched-heatmap}
+image_only_matched |>
+  mutate(model = fct_rev(model)) |>
+  plot_heatmap(model)
 ```
 
 :::
@@ -190,93 +220,167 @@ image_only %>%
 ### By sample
 
 ```{r}
-image_only |> 
-  mutate(model = fct_rev(model)) |> 
-  ggplot(aes(x = factor(epoch), y = id, fill = score)) +
-  geom_tile(color = "white", linewidth = 1) +
-  facet_wrap(~model, ncol = 3) +
-  scale_fill_manual(
-    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-  ) +
-  labs(
-    x = "Epoch",
-    y = "Sample",
-    fill = "Score"
-  ) +
-  theme_minimal() +
-  theme(panel.grid = element_blank())
+image_only |>
+  mutate(model = fct_rev(model)) |>
+  plot_heatmap(model)
 ```
 
 :::
 
-<!--
 
-## Blank
+## Comparing interventions - Claude Sonnet 4.5
 
-```{r}
-blank %>%
-  ggplot(aes(y = model, fill = score)) +
-  geom_bar(position = "fill") +
-  scale_fill_manual(
-    breaks = rev,
-    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-  ) +
-  scale_x_continuous(labels = scales::percent) +
-  labs(
-    x = "Percent",
-    y = "Model",
-    title = "Image only"
+```{r assemble-baseline}
+baseline_comparison <-
+  bind_rows(
+    baseline |> mutate(intervention = "None"),
+    baseline_memo_prompt |> mutate(intervention = "Memo prompt"),
+    baseline_thinking |> mutate(intervention = "Thinking"),
+    baseline_mitm |> mutate(intervention = "Model-in-the-middle")
+  ) |>
+  filter(stringr::str_detect(model, "[Ss]onnet")) |>
+  mutate(type = "baseline")
+
+intervention_comparison <-
+  bluffbench |>
+  filter(
+    type != "baseline",
+    stringr::str_detect(model, "[Ss]onnet")
+  ) |>
+  bind_rows(baseline_comparison) |>
+  mutate(
+    intervention = fct_relevel(
+      intervention,
+      "Model-in-the-middle",
+      "Thinking",
+      "Memo prompt",
+      "None"
+    )
   )
 ```
 
-```{r}
-blank |> 
-  mutate(model = fct_rev(model)) |> 
-  ggplot(aes(x = factor(epoch), y = id, fill = score)) +
-  geom_tile(color = "white", linewidth = 1) +
-  facet_wrap(~model, ncol = 3) +
-  scale_fill_manual(
-    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-  ) +
-  labs(
-    x = "Epoch",
-    y = "Sample",
-    fill = "Score"
-  ) +
-  theme_minimal() +
-  theme(panel.grid = element_blank())
-```
+::: {.panel-tabset}
 
--->
-
-
-## Bluffbench
-
+### By intervention and task
 
 ```{r}
-bluffbench |> 
-  mutate(prompt = "Memo") |> 
-  bind_rows(
-    bluffbench::bluff_results |> mutate(prompt = "Generic")
-  ) |> 
-  filter(
-    type != "baseline", 
-    stringr::str_detect(model, "[Ss]onnet")
-  ) |> 
-  ggplot(aes(y = prompt, fill = score)) +
+intervention_comparison |>
+  ggplot(aes(y = intervention, fill = score)) +
   geom_bar(position = "fill") +
   facet_wrap(vars(type)) +
   scale_fill_manual(
     breaks = rev,
-    values = c("C" = "#67a9cf", "I" = "#ef8a62")
+    values = c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
   ) +
   scale_x_continuous(labels = scales::percent) +
   labs(
     x = "Percent",
-    y = "Prompt",
-    title = "LLMs see what they expect to see",
-    subtitle = "Prompting slightly improves performance"
+    y = "Intervention",
+    title = "Intervention comparison",
+    subtitle = "For bluffbench and baseline (code+image) tasks"
   )
+```
+
+### Heatmap - mocked only
+
+```{r}
+intervention_comparison |>
+  filter(type == "mocked", intervention != "None") |>
+  plot_heatmap(intervention)
+```
+
+### Memo prompt
+
+Your primary job is to accurately interpret visualizations. 
+
+When evaluating a visualization, first analyze the plot as if you had no prior knowledge about the data and subject matter. Ignore the axis labels during this process, only describing the visual elements of the plot. Emit in \<MEMO\>\</MEMO\> tags what you see during this process. 
+
+Afterwards, you may incorporate knowledge about the data or contextual knowledge, but make sure to accurately report and incorporate what you noted in the prior tags, even if it contradicts your prior or contextual knowledge. 
+
+:::
+
+## MITM - closer look
+
+```{r mitm}
+mitm <-
+  read_rds(
+    "results/bluffbench-mitm/mitm_evaluation_results.rds"
+  ) |>
+  group_by(id) |>
+  mutate(epoch = row_number()) |>
+  ungroup() |>
+  select(id, score = grade, epoch, target, answer = mitm_full) |>
+  left_join(bluffbench::bluff_results |> distinct(id, type), by = "id") |>
+  mutate(
+    score = fct_recode(
+      score,
+      "Correct" = "C",
+      "Incorrect" = "I"
+    )
+  )
+```
+
+::: {.panel-tabset}
+
+## MITM vs. primary model
+
+```{r}
+mitm |>
+  filter(type != "baseline") |>
+  group_by(type) |>
+  summarize(score = sum(score == "Correct") / n()) |>
+  mutate(model = "MITM") |>
+  bind_rows(
+    bluffbench |>
+      filter(
+        str_detect(model, "[Ss]onnet"),
+        intervention == "Model-in-the-middle",
+        type != "baseline"
+      ) |>
+      group_by(type) |>
+      summarize(score = sum(score == "Correct") / n()) |>
+      mutate(model = "Primary")
+  ) |>
+  ggplot(aes(y = model, x = score)) +
+  geom_col(fill = "#67a9cf") +
+  facet_wrap(vars(type)) +
+  scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(
+    x = "Percent",
+    y = "Model",
+    title = "MITM is far more accurate than primary model"
+  )
+```
+
+## By sample
+
+```{r mitm-heatmap}
+mitm |>
+  group_by(id) |>
+  slice_head(n = 3) |>
+  filter(type == "mocked") |>
+  plot_heatmap("Mocked")
+```
+
+## Diamonds issue remains
+
+```{r mitm-diamonds}
+diamonds_answers <-
+  mitm |>
+  filter(id == "diamonds_carat_price_reversal") |>
+  mutate(
+    answer = str_remove(answer, "The description of the image content above.*")
+  )
+```
+
+`r diamonds_answers$answer`
+
+:::
+
+## MITM + Memo
+
+```{r}
+
 ```
 
 ## Incorrect answers
