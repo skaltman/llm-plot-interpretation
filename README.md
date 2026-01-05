@@ -1,3 +1,2 @@
-# databot-evals
+# How well do LLMs interpret plots?
 
-Component evaluations for Databot, testing LLM behaviors with data analysis tools.
