@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/temperature_energy.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then concisely tell me what patterns you see.
+    call the show_plot tool to display the visualization. then concisely tell me what patterns you see.
 target: |
   The plot shows a U-shaped relationship between temperature and metric for
   both categories. Metric values are higher at temperature extremes

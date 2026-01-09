@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/category_time_growth.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then succinctly tell me what patterns you see.
+    call the show_plot tool to display the visualization. then, succinctly tell me what patterns you see
 target: |
   The plot shows that value increases with time across all categories.
   Some categories (D, C) have both higher starting values and steeper growth

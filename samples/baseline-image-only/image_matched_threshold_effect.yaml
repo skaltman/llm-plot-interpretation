@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/threshold_effect.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then briefly describe what you see.
+    Use the show_plot tool to display the visualization then briefly describe what you see in the plot
 target: |
   The plot shows a clear threshold effect with two distinct regions: lower outcomes below level 15 and substantially higher
   outcomes above level 15. A successful submission accurately describes that there is a discontinuity or threshold effect around level 15,

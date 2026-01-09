@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/no_correlation.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then succinctly tell me what relationship you see.
+    call the show_plot tool then succinctly tell me what relationship you see in plot shown
 target: |
   The plot shows no correlation between x and y. The y values are randomly
   scattered with no systematic relationship to x. A successful submission

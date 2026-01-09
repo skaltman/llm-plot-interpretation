@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/positive_subgroups.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then briefly tell me what you see.
+    Call show_plot tool to display the visualization, then briefly tell me what you see.
 target: |
   The plot shows score increases with duration, or that there is a positive correlation between duration and score, or that higher duration
   values correspond to higher scores, or that there is an upward trend. Submissions may also note the scatter or the appearance
