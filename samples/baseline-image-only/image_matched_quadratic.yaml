@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/quadratic.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then succinctly tell me what relationship you see.
+    Use the show_plot tool to display the visualization, then succinctly tell me what relationship you see.
 target: |
   The plot shows a U-shaped or quadratic relationship between x and y.
   The y values are highest at the extremes of x and lowest near the middle.

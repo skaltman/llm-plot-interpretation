@@ -15,7 +15,7 @@ input:
     image_path <- "sample-images/baseline/bimodal_clusters.png"
   teardown: ""
   prompt: |
-    Please call the show_plot tool to display the visualization, then briefly describe what you observe.
+    call the show_plot tool to display the visualization, then briefly describe what you observe.
 target: |
   The plot shows clear bimodal clustering with a visible gap
   between the two groups, with the first cluster in the lower-left region
