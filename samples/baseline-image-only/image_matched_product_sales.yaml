@@ -1,0 +1,27 @@
+id: image_matched_product_sales
+type: image_interpretation
+tool:
+  name: tool_show_image
+  alias: show_plot
+metadata:
+  n_geoms: 1
+  geom_type: line
+  pattern_type: temporal
+  relationship: mixed_trends
+  difficulty: medium
+  pattern_source: standard
+input:
+  setup: |
+    image_path <- "sample-images/baseline/product_sales.png"
+  teardown: ""
+  prompt: |
+    Please call the show_plot tool to display the visualization, then briefly tell me what patterns you see.
+target: |
+  The plot shows distinct sales patterns for each product. Product A
+  shows some variation throughout the year, although it is relatively steady. Product B
+  shows steady growth with sales increasing month over month. Product C shows a
+  declining trend with sales decreasing over the year. A successful submission accurately
+  describes these different temporal patterns across the three products, but does not need
+  to point out every detail described here. It is mostly important to point out: the three
+  products have different trends, sales of C has been decreasing, and sales of B has been
+  increasing.
