@@ -1,0 +1,304 @@
+---
+title: "When interpreting plots, LLMs see what they want to see: Part 2"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    echo: false
+    warning: false
+---
+
+```{r setup}
+#| include: false
+library(tidyverse)
+library(bluffbench)
+
+# Load consolidated blog data
+blog_data <- read_rds(here::here("data/blog_data.rds"))
+baseline_reading <- blog_data$baseline_reading
+intervention_results <- blog_data$intervention_results
+mitm_helper <- blog_data$mitm_helper
+```
+
+```{r theme-setup}
+#| include: false
+theme_set(
+  theme_bw(base_size = 14) +
+    theme(
+      panel.border = element_blank(),
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background = element_rect(fill = "white", color = NA),
+      legend.background = element_rect(fill = "white", color = NA),
+      plot.subtitle = element_text(face = "italic"),
+      legend.position = "bottom"
+    )
+)
+
+colors <- c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
+
+# Helper for heatmaps
+plot_heatmap <- function(data, facet_var = NULL) {
+  p <- data |>
+    mutate(id = str_replace_all(id, "_", " ") |> str_wrap(20)) |>
+    ggplot(aes(x = factor(epoch), y = id, fill = score)) +
+    geom_tile(color = "white", linewidth = 0.5) +
+    scale_fill_manual(values = colors) +
+    labs(x = "Epoch", y = NULL, fill = NULL)
+
+  if (!is.null(facet_var)) {
+    p <- p + facet_wrap(vars({{ facet_var }}), ncol = 2)
+  }
+  p
+}
+```
+
+In [a previous post](https://posit.co/blog/introducing-bluffbench/), we discussed how current LLMs fail to accurately interpret plots that contradict with their prior beliefs. To do so, we used bluffbench, an evaluation that asks models to interpret plots that use data that purposefully disagrees with their priors.
+
+For example, one of the samples inverts the price-carat relationship in `diamonds` so that larger diamonds are less expensive.
+
+```{r diamonds-comparison}
+#| fig-width: 9
+#| fig-height: 4
+#| fig-alt: "Two scatterplots side by side. Left: original diamonds data showing positive relationship between carat and price. Right: manipulated data showing inverted (negative) relationship."
+bind_rows(
+  diamonds |>
+    select(carat, price) |>
+    mutate(version = "Original data"),
+  diamonds |>
+    mutate(price = max(price) - price) |>
+    select(carat, price) |>
+    mutate(version = "Manipulated data")
+) |>
+  mutate(version = fct_inorder(version)) |>
+  ggplot(aes(x = carat, y = price)) +
+  geom_point(alpha = 0.1, size = 0.5) +
+  facet_wrap(vars(version)) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    x = "Carat",
+    y = "Price",
+    title = "Manipulated diamonds data from bluffbench",
+    subtitle = "Models plot the manipulated data, but typically report seeing the expected relationship"
+  )
+```
+
+Instead of reporting this negative relationship, models typically report that the plot shows the expected, positive relationship. Here's a portion of a response from Claude Sonnet 4.5:
+
+> Here's the plot showing the relationship between diamond carat and price! How diamond size affects price: 
+>
+> There's a strong positive relationship between carat (diamond size) and price.^[You can see the full log for this sample [here](https://simonpcouch.github.io/bluffbench/logs/#/logs/2025-10-21T13-47-37-05-00_bluffbench_465475d21aad6cc3ab920b.json/samples/sample/diamonds_carat_price_reversal/1/).]
+
+We ended that post by saying that we were still looking for a solution to the problem because data analysis assistants like Databot rely on plot interpretation to understand data. Although we still haven't solved the problem, we do have some updates. First, what exactly is causing LLMs to misinterpret the bluffbench plots? 
+
+## What's really going on?
+
+You might recall that bluffbench includes a baseline case so that we could assess how well models interpret plots that use data of which they have no expectations. The models do better than in the "trick" cases, but still perform worse than you might expect or want a model fueling a data science agent to do.
+
+<!-- insert plot from bluffbench -->
+
+This leads to a possible hypothesis: maybe current LLMs can't see plots very well, or are relucant to use the pattern information in the plot to inform their description. Perhaps they have a sort of "blurry" vision or attention when looking at plots. This serves them ok when the plots align or don't contradict with their expectations, but hurts them with the plot is not not what they expect. 
+
+To delineate it further, here are three possible hypotheses for what's going wrong:
+
+1. **Skill issue:** Current LLMs just aren't very good at reading plots. They may appear competent in some situations by relying on other skills, like having prior knowledge of the data or incorporating other contextual information (data set name, axis labels, code, etc.).
+
+2. **Attention issue:** Models _can_ read plots, but don't bother looking at them carefully when they think they already know the answer.
+
+3. **Priors issue:** Models can read plots fine, but their expectations override what they actually see. These expectations may come into play even in seemingly benign cases like the bluffbench baseline scenarios. 
+
+To tease apart these hypotheses, we tested several more cases. 
+
+## LLMs are capable of interpreting plots
+
+First, we implemented a new baseline evaluation to better establish what's happening when models look at plots. We set up two situations: in the one, the model is told to write some code to create a visualation and then interpret that visualization. In the second, the model is simply provided the visualization with no context and asked to interpret it. Importantly, the visualizations created by the models and the ones provided to them where of the same data and were very thus very similar. The datasets had generic names (e.g., `df`) and column names (`x`, `y`, etc.). 
+
+We tested two scenarios with straightforward, non-adversarial plots:
+
+- **Image only:** Models are shown just the plot image and asked to describe the pattern
+- **Code + image:** Models write plotting code, see the result, and interpret it
+
+
+```{r baseline-code-image}
+#| fig-width: 9
+#| fig-height: 4
+#| fig-alt: "Bar chart showing model accuracy when writing code then interpreting the plot. Models are 70-90% correct."
+baseline_reading |>
+  filter(task == "Code + image") |>
+  ggplot(aes(y = model, fill = score)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(breaks = rev, values = colors) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "Percent correct",
+    y = NULL,
+    fill = NULL,
+    title = "Baseline plot interpretation",
+    subtitle = "Model writes plotting code then interprets plot"
+  )
+```
+
+```{r baseline-image-only}
+#| fig-width: 9
+#| fig-height: 4
+#| fig-alt: "Bar chart showing model accuracy when provided just the plot image. Models are 95-100% correct."
+baseline_reading |>
+  filter(task == "Image only") |>
+  ggplot(aes(y = model, fill = score)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(breaks = rev, values = colors) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "Percent correct",
+    y = NULL,
+    fill = NULL,
+    title = "Baseline plot interpretation",
+    subtitle = "Model provided the plot image"
+  )
+```
+
+Interestingly, the models did _better_ when just shown the image, suggesting that even non-adversarial information could interfere or activate priors that interefered with the models ability to interpret plots.
+
+This result suggests that model's difficulty with plot interpretation is fundamentally __not a skill issue.__ Their vision is fine. What they are bad at is incorporating the other information they have about the data or plot into their understanding of the actual visual patterns seen in the image. 
+
+(for example, just knowing its a scatterplot seems to activate the models prior that it will be a linear plot)
+
+This suggests taht it's either an attention issue, a priors issue, or possibly a combination. Regardless it's important that we know that models are actually fine at seeing the plots and visually interpreting them. This also rules out other possible issues, like the images being encoded in a way that makes them difficult for the models to interpret. 
+
+## Interventions
+
+After establishing this baseline, we continued to try several interventions, with only limited success. Here are a few fixes we tried:
+
+**Memo prompt:** We asked models to first describe only the visual elements of the plot, as if they had no prior knowledge of the data and subject matter, and ignoring axis labels, and to put this description within `<MEMO>` tags. You can see the exact prompt here. 
+
+**Extended thinking:** The memo prompt had some success, so we built on that prompt, but added language to prompt the models to use more extended thinking. 
+
+Neither prompting technique, nor others we tried, had much success, so we tried a more structural intervention next. 
+
+**Model-in-the-middle:** We had a fresh model (the _model in the middle_) describe the plot, then pass that text description to the primary model, which produced the final description of the plot. 
+
+```{r intervention-comparison}
+#| fig-width: 9
+#| fig-height: 4
+#| fig-alt: "Bar chart comparing intervention performance on mocked datasets. All interventions show high failure rates."
+intervention_results |>
+  filter(type == "mocked") |>
+  mutate(
+    intervention = fct_relevel(
+      intervention,
+      "Model-in-the-middle",
+      "Thinking",
+      "Memo prompt",
+      "None"
+    )
+  ) |>
+  ggplot(aes(y = intervention, fill = score)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(breaks = rev, values = colors) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "Percent correct",
+    y = NULL,
+    fill = NULL,
+    title = "Interventions on mocked (adversarial) datasets",
+    subtitle = "None of the interventions improved accuracy above 25%"
+  )
+```
+
+<!--
+
+```{r intervention-heatmap}
+#| fig-width: 10
+#| fig-height: 6
+#| fig-alt: "Heatmap showing per-sample accuracy for each intervention across epochs. Most samples show consistent failures regardless of intervention."
+#| eval: false
+intervention_results |>
+  filter(type == "mocked", intervention != "None") |>
+  mutate(
+    intervention = fct_relevel(
+      intervention,
+      "Memo prompt",
+      "Thinking",
+      "Model-in-the-middle"
+    )
+  ) |>
+  (\(d) plot_heatmap(d, intervention))()
+```
+
+-->
+
+## The model in the middle can see just fine
+
+The model-in-the-middle interpreted plots accurately about 75% of the time. However, the primary models often doubts the model-in-the-middle's description, even when we explicitly told it to trust the description as ground truth.
+
+```{r mitm-comparison}
+#| fig-width: 8
+#| fig-height: 4
+#| fig-alt: "Bar chart comparing MITM helper accuracy (75%) versus primary model accuracy (15%) on mocked datasets."
+mitm_helper_summary <- mitm_helper |>
+  filter(type == "mocked") |>
+  summarize(pct = mean(score == "Correct")) |>
+  mutate(model = "MITM helper\n(no context)")
+
+mitm_primary_summary <- intervention_results |>
+  filter(type == "mocked", intervention == "Model-in-the-middle") |>
+  summarize(pct = mean(score == "Correct")) |>
+  mutate(model = "Primary model\n(with context)")
+
+bind_rows(mitm_helper_summary, mitm_primary_summary) |>
+  mutate(model = fct_inorder(model)) |>
+  ggplot(aes(x = model, y = pct)) +
+  geom_col(fill = "#67a9cf", width = 0.6) +
+  geom_text(
+    aes(label = scales::percent(pct, accuracy = 1)),
+    vjust = -0.5,
+    size = 5
+  ) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(
+    x = NULL,
+    y = "Accuracy",
+    title = "Same model, different context",
+    subtitle = "The helper model sees the plot correctly; the primary model ignores it"
+  )
+```
+
+<!--
+
+```{r mitm-helper-heatmap}
+#| fig-width: 9
+#| fig-height: 5
+#| fig-alt: "Heatmap showing MITM helper accuracy per sample across epochs. The helper model correctly interprets most samples consistently."
+mitm_helper |>
+  filter(type == "mocked") |>
+  plot_heatmap() +
+  labs(
+    title = "MITM helper accuracy by sample",
+    subtitle = "Without prior-inducing context, the model sees the plots correctly"
+  )
+```
+
+-->
+
+<!--
+
+### The diamonds example
+
+We reversed the carat-price relationship in the `diamonds` dataset. Here's what the MITM helper reported:
+
+```{r diamonds-helper}
+diamonds_helper <- mitm_helper |>
+  filter(id == "diamonds_carat_price_reversal") |>
+  slice_head(n = 1) |>
+  mutate(
+    answer = str_remove(answer, "The description of the image content above.*")
+  )
+```
+
+> `r diamonds_helper$answer`
+
+The helper correctly describes a *negative* relationship. But the primary model reported a positive correlation anyway.
+
+--> 
+
+## What this means for now
+
