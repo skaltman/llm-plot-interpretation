@@ -26,11 +26,9 @@ theme_set(
   theme_bw(base_size = 14) +
     theme(
       panel.border = element_blank(),
-      panel.background = element_rect(fill = "white", color = NA),
-      plot.background = element_rect(fill = "white", color = NA),
-      legend.background = element_rect(fill = "white", color = NA),
       plot.subtitle = element_text(face = "italic"),
-      legend.position = "bottom"
+      legend.position = "bottom",
+      strip.background = element_rect(fill = "#f0f0f0")
     )
 )
 
@@ -52,9 +50,9 @@ plot_heatmap <- function(data, facet_var = NULL) {
 }
 ```
 
-In [a previous post](https://posit.co/blog/introducing-bluffbench/), we discussed how current LLMs fail to accurately interpret plots that contradict with their prior beliefs. To do so, we used bluffbench, an evaluation that asks models to interpret plots that use data that purposefully disagrees with their priors.
+In [a previous post](https://posit.co/blog/introducing-bluffbench/), we discussed the results from [bluffbench](https://github.com/simonpcouch/bluffbench), which evaluates how well LLMs can interpret plots that contradict with their prior beliefs. The models tested (GPT-5, Claude Sonnet 4.5, and Gemini Pro 2.5) largely failed to accurately interpret such plots, especially when plotting known datasets (`diamonds`, `mpg`, etc.) which had been secretly manipulated. 
 
-For example, one of the samples inverts the price-carat relationship in `diamonds` so that larger diamonds are less expensive.
+For example, one of the samples inverted the price-carat relationship in `diamonds` so that larger diamonds are less expensive. 
 
 ```{r diamonds-comparison}
 #| fig-width: 9
@@ -82,21 +80,56 @@ bind_rows(
   )
 ```
 
-Instead of reporting this negative relationship, models typically report that the plot shows the expected, positive relationship. Here's a portion of a response from Claude Sonnet 4.5:
+None of the models ever accurately reported seeing this negative relationship. Instead, they reported that the plot showed the expected, positive relationship. Here's a portion of a response from Claude Sonnet 4.5:
 
 > Here's the plot showing the relationship between diamond carat and price! How diamond size affects price: 
 >
 > There's a strong positive relationship between carat (diamond size) and price.^[You can see the full log for this sample [here](https://simonpcouch.github.io/bluffbench/logs/#/logs/2025-10-21T13-47-37-05-00_bluffbench_465475d21aad6cc3ab920b.json/samples/sample/diamonds_carat_price_reversal/1/).]
 
-We ended that post by saying that we were still looking for a solution to the problem because data analysis assistants like Databot rely on plot interpretation to understand data. Although we still haven't solved the problem, we do have some updates. First, what exactly is causing LLMs to misinterpret the bluffbench plots? 
+We ended that post by saying that we were still looking for a solution to the problem, which is important because data analysis agents like Databot rely on plot interpretation to understand data. Although we still haven't solved the problem, we do have some updates. 
 
 ## What's really going on?
 
-You might recall that bluffbench includes a baseline case so that we could assess how well models interpret plots that use data of which they have no expectations. The models do better than in the "trick" cases, but still perform worse than you might expect or want a model fueling a data science agent to do.
+First, _why_ exactly do LLMs misinterpet plots like those in bluffbench?
+
+In our previous post, we showed the results from the two adversarial conditions (mocked and intuitive), as well as a baseline condition, for three different LLMs. 
+
+```{r bluffbench-all}
+#| fig-width: 9
+#| fig-height: 5
+#| fig-alt: "Grouped bar chart showing model accuracy across bluffbench conditions. All models perform worse on mocked datasets."
+bluff_results |>
+  mutate(
+    type = fct_relevel(type, "baseline", "intuitive", "mocked") |>
+      fct_recode(
+        "Baseline" = "baseline",
+        "Intuitive" = "intuitive",
+        "Mocked" = "mocked"
+      )
+  ) |>
+  summarize(
+    pct_correct = mean(score == "C"),
+    .by = c(model, type)
+  ) |>
+  ggplot(aes(y = type, x = pct_correct, fill = model)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
+  scale_fill_viridis_d(option = "plasma", begin = 0.2, end = 0.8) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  labs(
+    x = "Percent correct",
+    y = NULL,
+    fill = NULL,
+    title = "Bluffbench results for mocked, intuitive, and baseline conditions",
+    subtitle = "Models perform worse when the data directly conradicts their priors (mocked condition)"
+  )
+``` 
+
+The models perform moderately on the baseline, but still perform worse than you might expect a frontier LLM, especially one you're using to power a data science agent, to do.^[One contributing factor is that models in this baseline condition occasionally created their own dataset to plot rather than using the one provided, meaning they weren't even looking at the correct data. We chose not to prevent this behavior since we wanted to simulate how models might behave in similar real-world tasks.]
 
 <!-- insert plot from bluffbench -->
 
-This leads to a possible hypothesis: maybe current LLMs can't see plots very well, or are relucant to use the pattern information in the plot to inform their description. Perhaps they have a sort of "blurry" vision or attention when looking at plots. This serves them ok when the plots align or don't contradict with their expectations, but hurts them with the plot is not not what they expect. 
+This leads to one possible hypothesis: maybe the current LLMs actually can't interpret plots very well. It's possible they have "blurry" vision when looking at the plot image or trouble attending to the actual patterns present in the plot. Their limited vision or attention may be enough to adequately (but not perfectly) interpret plots that align with their expectations, especially if they can rely on information like axis labels and dataset names, but severely limits them when plots are not what that expect (as in the mocked and intuitive bluffbench cases). 
 
 To delineate it further, here are three possible hypotheses for what's going wrong:
 
@@ -106,26 +139,35 @@ To delineate it further, here are three possible hypotheses for what's going wro
 
 3. **Priors issue:** Models can read plots fine, but their expectations override what they actually see. These expectations may come into play even in seemingly benign cases like the bluffbench baseline scenarios. 
 
-To tease apart these hypotheses, we tested several more cases. 
+To tease apart these hypotheses, we ran two additional baseline evaluations. 
 
-## LLMs are capable of interpreting plots
+## LLMs can interpret plots accurately
 
-First, we implemented a new baseline evaluation to better establish what's happening when models look at plots. We set up two situations: in the one, the model is told to write some code to create a visualation and then interpret that visualization. In the second, the model is simply provided the visualization with no context and asked to interpret it. Importantly, the visualizations created by the models and the ones provided to them where of the same data and were very thus very similar. The datasets had generic names (e.g., `df`) and column names (`x`, `y`, etc.). 
+We implemented two additional baseline evaluations:
+
+- **Image only:** Models were shown just the plot image and asked to describe the pattern they observed. 
+- **Code + image:** Models were instructed to write code to plot a particular dataset, inspect the result, and describe what they observed. 
+
+Importantly, the visualizations created by the models and the ones provided to them displayed the same data. The datasets had generic names (e.g., `df`) and column names (`x`, `y`, etc.). 
 
 We tested two scenarios with straightforward, non-adversarial plots:
 
-- **Image only:** Models are shown just the plot image and asked to describe the pattern
-- **Code + image:** Models write plotting code, see the result, and interpret it
-
-
-```{r baseline-code-image}
-#| fig-width: 9
-#| fig-height: 4
-#| fig-alt: "Bar chart showing model accuracy when writing code then interpreting the plot. Models are 70-90% correct."
+```{r baseline-reading}
+#| fig-width: 10
+#| fig-height: 5
+#| fig-alt: "Faceted bar chart showing model accuracy. Image only: 95-100% correct. Code + image: 70-90% correct."
 baseline_reading |>
-  filter(task == "Code + image") |>
+  mutate(
+    task = fct_recode(
+      task,
+      "Model sees image only" = "Image only",
+      "Model writes code, sees result" = "Code + image"
+    ),
+    task = fct_relevel(task, "Model sees image only")
+  ) |>
   ggplot(aes(y = model, fill = score)) +
   geom_bar(position = "fill") +
+  facet_wrap(vars(task)) +
   scale_fill_manual(breaks = rev, values = colors) +
   scale_x_continuous(labels = scales::percent) +
   labs(
@@ -133,26 +175,7 @@ baseline_reading |>
     y = NULL,
     fill = NULL,
     title = "Baseline plot interpretation",
-    subtitle = "Model writes plotting code then interprets plot"
-  )
-```
-
-```{r baseline-image-only}
-#| fig-width: 9
-#| fig-height: 4
-#| fig-alt: "Bar chart showing model accuracy when provided just the plot image. Models are 95-100% correct."
-baseline_reading |>
-  filter(task == "Image only") |>
-  ggplot(aes(y = model, fill = score)) +
-  geom_bar(position = "fill") +
-  scale_fill_manual(breaks = rev, values = colors) +
-  scale_x_continuous(labels = scales::percent) +
-  labs(
-    x = "Percent correct",
-    y = NULL,
-    fill = NULL,
-    title = "Baseline plot interpretation",
-    subtitle = "Model provided the plot image"
+    subtitle = "Models are accurate at interpreting straightforward plots"
   )
 ```
 
