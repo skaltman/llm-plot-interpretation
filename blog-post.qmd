@@ -165,7 +165,7 @@ To test this hypothesis, **we developed a set of baseline samples to evaluate ho
 
 ![Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots.](images/baseline-images.png){fig-alt="Three example baseline plots showing different relationship types."}
 
-**All three models performed relatively well on the baseline samples.** You can see the results compared to the mocked and intuitive conditions below. 
+**All three models performed well on the baseline samples,** especially compared to the two adversarial bluffbench conditions: _mocked_ and _intuitive_. In the _mocked_ condition, models plot known datasets like `diamonds` that we secretly manipulated beforehand. The _inuitive_ condition involves novel synthetic datasets that the models likely had expectations about (e.g., test scores vs. hours spent studying). See the [first bluffbench blog post](https://posit.co/blog/introducing-bluffbench/) for more details about these conditions. 
 
 ```{r bluffbench-all}
 #| fig-width: 7
@@ -220,6 +220,8 @@ bind_rows(
   ) +
   theme(axis.text.x = element_markdown())
 ``` 
+
+Note that the intuitive condition is more realistic, so improving accuracy there matters more to us than in the mocked condition.
 
 We also tested a condition where the models only saw the plot image, without writing the code themselves. Performance was similar (Claude Sonnet 4.5: `r get_image_acc("Claude Sonnet 4.5")`%, Gemini Pro 2.5: `r get_image_acc("Gemini Pro 2.5")`%, GPT-5: `r get_image_acc("GPT-5")`%). 
 

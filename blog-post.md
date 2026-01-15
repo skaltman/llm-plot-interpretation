@@ -50,12 +50,21 @@ negative correlation, quadratic, etc.).
 data-fig-alt="Three example baseline plots showing different relationship types."
 alt="Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots." />
 
-**All three models performed relatively well on the baseline samples.**
-You can see the results compared to the mocked and intuitive conditions
-below.
+**All three models performed well on the baseline samples,** especially
+compared to the two adversarial bluffbench conditions: *mocked* and
+*intuitive*. In the *mocked* condition, models plot known datasets like
+`diamonds` that we secretly manipulated beforehand. The *inuitive*
+condition involves novel synthetic datasets that the models likely had
+expectations about (e.g., test scores vs. hours spent studying). See the
+[first bluffbench blog
+post](https://posit.co/blog/introducing-bluffbench/) for more details
+about these conditions.
 
 <img src="blog-post_files/figure-commonmark/bluffbench-all-1.png"
 data-fig-alt="Line chart showing model accuracy dropping across bluffbench conditions. All models perform worse on mocked datasets." />
+
+Note that the intuitive condition is more realistic, so improving
+accuracy there matters more to us than in the mocked condition.
 
 We also tested a condition where the models only saw the plot image,
 without writing the code themselves. Performance was similar (Claude
