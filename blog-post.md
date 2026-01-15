@@ -42,9 +42,9 @@ even in normal, non-adversarial conditions, LLMs have difficulty
 To test this hypothesis, **we developed a set of baseline samples to
 evaluate how well models interpret straightforward plots** that do not
 contradict their priors. The baseline datasets have generic names and
-columns (e.g., `df`, `x`, `y`) and were designed to test LLMs ability to
-describe various types of relationships (positive correlation, negative
-correlation, quadratic, etc.).
+columns (e.g., `df`, `x`, `y`) and were designed to test LLMs’ ability
+to describe various types of relationships (positive correlation,
+negative correlation, quadratic, etc.).
 
 <img src="images/baseline-images.png"
 data-fig-alt="Three example baseline plots showing different relationship types."
@@ -66,7 +66,7 @@ information like axis labels to inform their interpretation of the plot,
 the results suggest that LLMs are capable of accurately interpreting
 plots when their prior knowledge isn’t contradicted.
 
-The interpretation issues seen in adversarial bluffbench conditions is
+The interpretation issues seen in adversarial bluffbench conditions are
 therefore likely **not a visual skill issue.** LLMs are capable of
 (mostly) accurately interpreting plots when those plots don’t conflict
 with what they expect to see. These results also make it unlikely the

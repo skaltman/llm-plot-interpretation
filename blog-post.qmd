@@ -161,7 +161,7 @@ get_acc <- function(m, t) {
 
 Why exactly do LLMs misinterpret plots like those in bluffbench? You might wonder if current LLMs are good at interpreting _any_ plots. Maybe even in normal, non-adversarial conditions, LLMs have difficulty "seeing" or attending to the actual patterns in a plot. 
 
-To test this hypothesis, **we developed a set of baseline samples to evaluate how well models interpret straightforward plots** that do not contradict their priors. The baseline datasets have generic names and columns (e.g., `df`, `x`, `y`) and were designed to test LLMs ability to describe various types of relationships (positive correlation, negative correlation, quadratic, etc.). 
+To test this hypothesis, **we developed a set of baseline samples to evaluate how well models interpret straightforward plots** that do not contradict their priors. The baseline datasets have generic names and columns (e.g., `df`, `x`, `y`) and were designed to test LLMs' ability to describe various types of relationships (positive correlation, negative correlation, quadratic, etc.). 
 
 ![Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots.](images/baseline-images.png){fig-alt="Three example baseline plots showing different relationship types."}
 
@@ -225,7 +225,7 @@ We also tested a condition where the models only saw the plot image, without wri
 
 Although it's possible that models are partially relying on non-pattern information like axis labels to inform their interpretation of the plot, the results suggest that LLMs are capable of accurately interpreting plots when their prior knowledge isn't contradicted.
 
-The interpretation issues seen in adversarial bluffbench conditions is therefore likely __not a visual skill issue.__ LLMs are capable of (mostly) accurately interpreting plots when those plots don't conflict with what they expect to see. These results also make it unlikely the problem is that the images are being encoded or formatted in a way that makes them difficult for the models to interpret.
+The interpretation issues seen in adversarial bluffbench conditions are therefore likely __not a visual skill issue.__ LLMs are capable of (mostly) accurately interpreting plots when those plots don't conflict with what they expect to see. These results also make it unlikely the problem is that the images are being encoded or formatted in a way that makes them difficult for the models to interpret.
 
 ## What we tried
 
