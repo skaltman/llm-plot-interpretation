@@ -227,7 +227,7 @@ We also tested a condition where the models only saw the plot image, without wri
 
 Although it's possible that models are partially relying on non-pattern information like axis labels to inform their interpretation of the plot, the results suggest that LLMs are capable of accurately interpreting plots when their prior knowledge isn't contradicted.
 
-The interpretation issues seen in adversarial bluffbench conditions are therefore likely __not a visual skill issue.__ LLMs are capable of (mostly) accurately interpreting plots when those plots don't conflict with what they expect to see. These results also make it unlikely the problem is that the images are being encoded or formatted in a way that makes them difficult for the models to interpret.
+The interpretation issues seen in adversarial bluffbench conditions are therefore likely __not a visual skill issue.__ LLMs are capable of (mostly) accurately interpreting plots when those plots don't conflict with what they expect to see.^[Our results are also similar to those in [Vo et al. (2025)](https://vlmsarebiased.github.io/), which found that models accurately counted elements in images matching their expectations (e.g., a dog with four legs), but failed when images contradicted them (e.g., a dog with five legs).] These results also make it unlikely the problem is that the images are being encoded or formatted in a way that makes them difficult for the models to interpret.
 
 ## What we tried
 

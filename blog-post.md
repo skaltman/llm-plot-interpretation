@@ -78,9 +78,9 @@ plots when their prior knowledge isn’t contradicted.
 The interpretation issues seen in adversarial bluffbench conditions are
 therefore likely **not a visual skill issue.** LLMs are capable of
 (mostly) accurately interpreting plots when those plots don’t conflict
-with what they expect to see. These results also make it unlikely the
-problem is that the images are being encoded or formatted in a way that
-makes them difficult for the models to interpret.
+with what they expect to see.[^1] These results also make it unlikely
+the problem is that the images are being encoded or formatted in a way
+that makes them difficult for the models to interpret.
 
 ## What we tried
 
@@ -185,3 +185,9 @@ get right.
 We’re continuing to investigate this problem. If you’d like to test your
 own models, [bluffbench](https://github.com/simonpcouch/bluffbench) is
 available on GitHub.
+
+[^1]: Our results are also similar to those in [Vo et
+    al. (2025)](https://vlmsarebiased.github.io/), which found that
+    models accurately counted elements in images matching their
+    expectations (e.g., a dog with four legs), but failed when images
+    contradicted them (e.g., a dog with five legs).
