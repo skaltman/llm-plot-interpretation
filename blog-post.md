@@ -1,14 +1,14 @@
-# When interpreting plots, LLMs see what they want to see: Part 2
+# LLMs interpret plots well, until expectations interfere
 
 
 In [a previous post](https://posit.co/blog/introducing-bluffbench/), we
 discussed the results from
 [bluffbench](https://github.com/simonpcouch/bluffbench), an evaluation
-that tests how well LLMs interpret plots that contradict with their
-prior beliefs. The models tested (GPT-5, Claude Sonnet 4.5, and Gemini
-Pro 2.5) largely failed to accurately interpret such plots, especially
-when plotting known datasets (`diamonds`, `mpg`, etc.) that had been
-secretly manipulated.
+that tests how well LLMs interpret plots that contradict their prior
+beliefs. The models tested (GPT-5.2, Claude Opus 4.5, and Gemini 2.5
+Pro) largely failed to accurately interpret such plots, especially when
+plotting known datasets (`diamonds`, `mpg`, etc.) that had been secretly
+manipulated.
 
 For example, one of the samples inverts the price-carat relationship in
 `diamonds` so that larger diamonds are less expensive than smaller ones.
@@ -19,7 +19,7 @@ data-fig-alt="Two scatterplots side by side. Left: original diamonds data showin
 **None of the models ever accurately reported seeing this negative
 relationship.** Instead, they reported that the plot showed the
 expected, positive relationship. Here’s a portion of a response from
-Claude Sonnet 4.5 (emphasis ours):
+Claude Opus 4.5 (emphasis ours):
 
 > Here’s the plot showing the relationship between diamond carat and
 > price! How diamond size affects price:
@@ -50,25 +50,28 @@ negative correlation, quadratic, etc.).
 data-fig-alt="Three example baseline plots showing different relationship types."
 alt="Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots." />
 
-**All three models performed well on the baseline samples,** especially
-compared to the two adversarial bluffbench conditions: *mocked* and
-*intuitive*. In the *mocked* condition, models plot known datasets like
-`diamonds` that we secretly manipulated beforehand. The *inuitive*
-condition involves novel synthetic datasets that the models likely had
-expectations about (e.g., test scores vs. hours spent studying). See the
-[first bluffbench blog
+**All three models performed very well on the baseline samples** (Claude
+Opus 4.5: 92%, Gemini 2.5 Pro: 85%, GPT-5.2: 100%). *Intuitive* and
+*mocked* are the two adversarial bluffbench conditions. In the mocked
+condition, models plot known datasets like `diamonds` that we secretly
+manipulated beforehand. The intuitive condition involves novel synthetic
+datasets that the models likely had expectations about (e.g., test
+scores vs. hours spent studying). See the [first bluffbench blog
 post](https://posit.co/blog/introducing-bluffbench/) for more details
 about these conditions.
-
-<img src="blog-post_files/figure-commonmark/bluffbench-all-1.png"
-data-fig-alt="Line chart showing model accuracy dropping across bluffbench conditions. All models perform worse on mocked datasets." />
 
 Note that the intuitive condition is more realistic, so improving
 accuracy there matters more to us than in the mocked condition.
 
+<img src="blog-post_files/figure-commonmark/bluffbench-all-1.png"
+data-fig-alt="Line chart showing model accuracy dropping across bluffbench conditions. All models perform worse on mocked datasets." />
+
+These results are contained in `bluffbench::bluff_results`.[^1]
+
 We also tested a condition where the models only saw the plot image,
-without writing the code themselves. Performance was similar (Claude
-Sonnet 4.5: 79%, Gemini Pro 2.5: 87%, GPT-5: 92%).
+without writing the code themselves. Claude Opus 4.5 and Gemini 2.5 Pro
+actually performed better with just the image, while GPT-5.2 performed
+similarly (Claude Opus 4.5: 100%, Gemini 2.5 Pro: 87%, GPT-5.2: 97%).
 
 Although it’s possible that models are partially relying on non-pattern
 information like axis labels to inform their interpretation of the plot,
@@ -78,14 +81,14 @@ plots when their prior knowledge isn’t contradicted.
 The interpretation issues seen in adversarial bluffbench conditions are
 therefore likely **not a visual skill issue.** LLMs are capable of
 (mostly) accurately interpreting plots when those plots don’t conflict
-with what they expect to see.[^1] These results also make it unlikely
+with what they expect to see.[^2] These results also make it unlikely
 the problem is that the images are being encoded or formatted in a way
 that makes them difficult for the models to interpret.
 
 ## What we tried
 
 After establishing this baseline, we continued to try several
-interventions. So far, interventions like prompting and having a
+interventions. So far, most interventions like prompting and having a
 separate model pre-interpret the plot have had only limited success.
 Here are a few fixes we tried:
 
@@ -95,11 +98,11 @@ plot, acting as if they had no prior knowledge of the data or subject
 matter and ignoring axis labels. After this memo, they could write their
 final interpretation of the plot, using whatever knowledge they wanted.
 You can see the exact prompt
-[here](!--TODO%20Add%20link%20when%20PR%20is%20merged--).
+[here](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/prompt-memo.md).
 
 **Extended thinking:** We [built on the memo
-prompt](!--%20TODO%20Add%20link%20--), but added language to prompt the
-models to use more extended thinking.
+prompt](https://github.com/simonpcouch/bluffbench/blob/678a54e62f1907bd378551eb51d59e1817ad168d/inst/run/logs/thinking/run_eval.R#L8),
+but added language to prompt the models to use more extended thinking.
 
 Neither prompting technique, nor others we tried, had much success, so
 we attempted a more structural intervention next.
@@ -109,16 +112,16 @@ the middle*) describes the plot, [ignoring information like axis
 labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md).
 That description is then given to the primary model, which uses it to
 form its final description of the plot. The model-in-the-middle and the
-primary model are always the same LLM (i.e., if testing Claude Sonnet
-4.5, both are Claude Sonnet 4.5).
+primary model are always the same LLM (i.e., if testing Claude Opus 4.5,
+both are Claude Opus 4.5).
 
-Although each intervention improved performance above no intervention,
-none improved performance enough that we would be comfortable relying on
-the model to interpret plots that contradict the model’s expectations.
+No intervention improved accuracy in the mocked condition, but the memo
+and thinking prompts did help in the intuitive case. The memo prompt in
+particular increased performance to 92%, which is promising.
 
 <img
 src="blog-post_files/figure-commonmark/intervention-comparison-1.png"
-data-fig-alt="Lollipop chart comparing intervention performance on mocked datasets. All interventions show low accuracy." />
+data-fig-alt="Bar chart comparing intervention performance on mocked datasets. All interventions show low accuracy." />
 
 ## Models can overcome priors
 
@@ -126,10 +129,9 @@ Although the model-in-the-middle (MITM) *approach* was not particularly
 effective, the actual plot interpretations from the MITM were relatively
 accurate. The MITM was instructed to ignore information like axis labels
 and outside context and focus solely on the visual patterns in the plot,
-and this prompt produced relatively good descriptions.
-
-However, the primary model typically doubted or flat out ignored the
-MITM’s descriptions.
+and this prompt produced relatively good descriptions. However, the
+primary model typically doubted or flat out ignored the MITM’s
+descriptions.
 
 <img src="blog-post_files/figure-commonmark/mitm-comparison-1.png"
 data-fig-alt="Bar chart comparing MITM helper accuracy (75%) versus primary model accuracy (15%) on mocked datasets." />
@@ -167,9 +169,17 @@ both accurately.
 
 ## What this means for now
 
-The scenarios in bluffbench are adversarial by design. We deliberately
-created datasets that contradict with the LLM’s presumed priors. In
-everyday use, conflicts this stark may be rare, and users typically
+**When plots don’t contradict the LLMs’ expectations, they can
+accurately interpret plots, and prompting models to ignore other context
+improves their accuracy.** These results indicate that the issues seen
+in bluffbench are **not a vision problem.** The challenge is therefore
+not to improve vision but to convince models to reliably and fluently
+update their beliefs when visual evidence clashes with what they already
+“know.”
+
+The scenarios in bluffbench are also adversarial by design. We
+deliberately created datasets that contradict the LLM’s presumed priors.
+In everyday use, conflicts this stark may be rare, and users typically
 provide context that can help the model understand what’s going on. For
 example, if you tell the LLM that you modified `diamonds`, it’s more
 likely to interpret the plot accurately. Unlike in our evaluation, real
@@ -182,11 +192,18 @@ risk providing false information to the user or reinforcing assumptions.
 For data analysis agents like Databot, this is a capability we need to
 get right.
 
-We’re continuing to investigate this problem. If you’d like to test your
-own models, [bluffbench](https://github.com/simonpcouch/bluffbench) is
-available on GitHub.
+We’re continuing to investigate this problem and implement solutions. If
+you’d like to test your own models,
+[bluffbench](https://github.com/simonpcouch/bluffbench) is available on
+GitHub.
 
-[^1]: Our results are also similar to those in [Vo et
+[^1]: `bluff_results` was updated to contain results for Gemini 3 Pro,
+    not Gemini 2.5 Pro. However, Gemini 3 Pro had a specific issue where
+    it often created its own synthetic datasets to plot instead of
+    plotting the provided data, and so we don’t think the accuracy
+    numbers reflect Gemini 3 Pro’s actual abilities.
+
+[^2]: Our results are also similar to those in [Vo et
     al. (2025)](https://vlmsarebiased.github.io/), which found that
     models accurately counted elements in images matching their
     expectations (e.g., a dog with four legs), but failed when images

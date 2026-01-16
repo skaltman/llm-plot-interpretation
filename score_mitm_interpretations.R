@@ -7,7 +7,7 @@ library(tibble)
 file_out <- here::here("data/mitm-scores.rds")
 
 # Load MITM log
-log_path <- "/Users/saraa/GitHub/rstudio/bluffbench/inst/run/logs/mitm/2026-01-12T15-48-58-08-00_bluffbench_465475d21aad6cc3ab920b.json"
+log_path <- "/Users/saraa/GitHub/rstudio/bluffbench/inst/run/logs/mitm/2026-01-15T18-49-52-08-00_bluffbench-claude-opus-4-5-20251101-217c644b6020290b34bb0e_bluffbench_claude-opus-4-5-20251101_217c644b6020290b34bb0e.json"
 
 log_data <- jsonlite::fromJSON(log_path, simplifyVector = FALSE)
 

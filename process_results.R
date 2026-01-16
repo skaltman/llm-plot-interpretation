@@ -1,6 +1,7 @@
 library(dplyr)
 library(purrr)
 library(stringr)
+library(readr)
 
 logs_dir <- "../../rstudio/bluffbench/inst/run/logs"
 
@@ -67,23 +68,6 @@ mitm_scores <- readRDS("data/mitm-scores.rds") |>
 # Combine all data
 all_results <- bind_rows(rda_data, mitm_scores)
 
-cat("\n=== Summary ===\n")
-cat("Total rows:", nrow(all_results), "\n\n")
-cat("Condition x Model counts:\n")
-print(table(all_results$condition, all_results$model))
-
-cat(
-  "\nScore distribution by condition:\n
-"
-)
-all_results |>
-  group_by(condition) |>
-  summarise(
-    n = n(),
-    correct = sum(score == "C"),
-    accuracy = mean(score == "C") * 100
-  ) |>
-  print()
-
 # Save the combined dataset
-saveRDS(all_results, "data/all_results.rds")
+all_results |>
+  write_rds("data/all_results.rds")

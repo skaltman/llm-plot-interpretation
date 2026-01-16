@@ -1,5 +1,5 @@
 ---
-title: "When interpreting plots, LLMs see what they want to see: Part 2"
+title: "LLMs interpret plots well, until expectations interfere"
 format:
   gfm:
     echo: false
@@ -15,8 +15,19 @@ library(ggtext)
 # Load all results
 all_results <- read_rds(here::here("data/all_results.rds"))
 
+# Load Gemini 2.5 Pro results and combine with other models from bluff_results
+gemini_25_results <- read_rds(here::here("data/gemini_25_pro_results.rds"))
+
+# Create combined bluff_results with Gemini 2.5 Pro instead of Gemini 3 Pro
+bluff_results_combined <- bind_rows(
+  bluff_results |> filter(model != "Gemini 3 Pro"),
+  gemini_25_results |>
+    transmute(id, epoch, type, target, score, model)
+)
+
 # Baseline reading comparison: image only vs code + image
-baseline_reading <- all_results |>
+baseline_reading <-
+  all_results |>
   filter(condition %in% c("baseline", "image_only")) |>
   mutate(
     task = case_when(
@@ -24,9 +35,9 @@ baseline_reading <- all_results |>
       condition == "baseline" ~ "Code + image"
     ),
     model = case_when(
-      model == "claude_4_5_sonnet" ~ "Claude Sonnet 4.5",
-      model == "gemini_2_5_pro" ~ "Gemini Pro 2.5",
-      model == "gpt_5" ~ "GPT-5"
+      model == "claude_4_5_opus" ~ "Claude Opus 4.5",
+      model == "gemini_2_5_pro" ~ "Gemini 2.5 Pro",
+      model == "gpt_5_2" ~ "GPT-5.2"
     ),
     score = if_else(score == "C", "Correct", "Incorrect"),
     score = factor(score, levels = c("Incorrect", "Correct"))
@@ -36,7 +47,7 @@ baseline_reading <- all_results |>
 intervention_results <- all_results |>
   filter(
     condition %in% c("memo", "thinking", "mitm"),
-    model == "claude_4_5_sonnet"
+    model == "claude_4_5_opus"
   ) |>
   mutate(
     intervention = case_when(
@@ -62,6 +73,19 @@ get_image_acc <- function(m) {
     filter(model == m) |>
     pull(accuracy)
 }
+
+# Intervention accuracy by intervention and type
+intervention_acc <- intervention_results |>
+  summarize(
+    accuracy = round(mean(score == "Correct") * 100),
+    .by = c(intervention, type)
+  )
+
+get_intervention_acc <- function(i, t) {
+  intervention_acc |>
+    filter(intervention == i, type == t) |>
+    pull(accuracy)
+}
 ```
 
 ```{r theme-setup}
@@ -77,24 +101,9 @@ theme_set(
 )
 
 colors <- c("Correct" = "#67a9cf", "Incorrect" = "#ef8a62")
-
-# Helper for heatmaps
-plot_heatmap <- function(data, facet_var = NULL) {
-  p <- data |>
-    mutate(id = str_replace_all(id, "_", " ") |> str_wrap(20)) |>
-    ggplot(aes(x = factor(epoch), y = id, fill = score)) +
-    geom_tile(color = "white", linewidth = 0.5) +
-    scale_fill_manual(values = colors) +
-    labs(x = "Epoch", y = NULL, fill = NULL)
-
-  if (!is.null(facet_var)) {
-    p <- p + facet_wrap(vars({{ facet_var }}), ncol = 2)
-  }
-  p
-}
 ```
 
-In [a previous post](https://posit.co/blog/introducing-bluffbench/), we discussed the results from [bluffbench](https://github.com/simonpcouch/bluffbench), an evaluation that tests how well LLMs interpret plots that contradict with their prior beliefs. The models tested (GPT-5, Claude Sonnet 4.5, and Gemini Pro 2.5) largely failed to accurately interpret such plots, especially when plotting known datasets (`diamonds`, `mpg`, etc.) that had been secretly manipulated. 
+In [a previous post](https://posit.co/blog/introducing-bluffbench/), we discussed the results from [bluffbench](https://github.com/simonpcouch/bluffbench), an evaluation that tests how well LLMs interpret plots that contradict their prior beliefs. The models tested (GPT-5.2, Claude Opus 4.5, and Gemini 2.5 Pro) largely failed to accurately interpret such plots, especially when plotting known datasets (`diamonds`, `mpg`, etc.) that had been secretly manipulated. 
 
 For example, one of the samples inverts the price-carat relationship in `diamonds` so that larger diamonds are less expensive than smaller ones. 
 
@@ -124,7 +133,7 @@ bind_rows(
   )
 ```
 
-**None of the models ever accurately reported seeing this negative relationship.** Instead, they reported that the plot showed the expected, positive relationship. Here's a portion of a response from Claude Sonnet 4.5 (emphasis ours):
+**None of the models ever accurately reported seeing this negative relationship.** Instead, they reported that the plot showed the expected, positive relationship. Here's a portion of a response from Claude Opus 4.5 (emphasis ours):
 
 > Here's the plot showing the relationship between diamond carat and price! How diamond size affects price: 
 >
@@ -137,17 +146,17 @@ Data analysis agents like Databot partially rely on plot interpretation to under
 ```{r bluffbench-accuracy}
 #| include: false
 # Compute accuracy by model and type
-bluffbench_accuracy <- bluff_results |>
-  filter(type != "baseline") |>
+bluffbench_accuracy <-
+  bluff_results_combined |>
   summarize(
     accuracy = round(mean(score == "C") * 100),
     .by = c(model, type)
   ) |>
   mutate(
     model_short = case_when(
-      model == "Claude Sonnet 4.5" ~ "claude",
-      model == "Gemini Pro 2.5" ~ "gemini",
-      model == "GPT-5" ~ "gpt5"
+      model == "Claude Opus 4.5" ~ "opus",
+      model == "Gemini 2.5 Pro" ~ "gemini",
+      model == "GPT-5.2" ~ "gpt"
     )
   )
 
@@ -165,28 +174,15 @@ To test this hypothesis, **we developed a set of baseline samples to evaluate ho
 
 ![Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots.](images/baseline-images.png){fig-alt="Three example baseline plots showing different relationship types."}
 
-**All three models performed well on the baseline samples,** especially compared to the two adversarial bluffbench conditions: _mocked_ and _intuitive_. In the _mocked_ condition, models plot known datasets like `diamonds` that we secretly manipulated beforehand. The _inuitive_ condition involves novel synthetic datasets that the models likely had expectations about (e.g., test scores vs. hours spent studying). See the [first bluffbench blog post](https://posit.co/blog/introducing-bluffbench/) for more details about these conditions. 
+**All three models performed very well on the baseline samples** (Claude Opus 4.5: `r get_acc("opus", "baseline")`%, Gemini 2.5 Pro: `r get_acc("gemini", "baseline")`%, GPT-5.2: `r get_acc("gpt", "baseline")`%). _Intuitive_ and _mocked_ are the two adversarial bluffbench conditions. In the mocked condition, models plot known datasets like `diamonds` that we secretly manipulated beforehand. The intuitive condition involves novel synthetic datasets that the models likely had expectations about (e.g., test scores vs. hours spent studying). See the [first bluffbench blog post](https://posit.co/blog/introducing-bluffbench/) for more details about these conditions. 
+
+Note that the intuitive condition is more realistic, so improving accuracy there matters more to us than in the mocked condition.
 
 ```{r bluffbench-all}
 #| fig-width: 7
 #| fig-height: 4.5
 #| fig-alt: "Line chart showing model accuracy dropping across bluffbench conditions. All models perform worse on mocked datasets."
-# Combine baseline from all_results with intuitive/mocked from bluff_results
-bind_rows(
-  all_results |>
-    filter(condition == "baseline") |>
-    mutate(
-      model = case_when(
-        model == "claude_4_5_sonnet" ~ "Claude Sonnet 4.5",
-        model == "gemini_2_5_pro" ~ "Gemini Pro 2.5",
-        model == "gpt_5" ~ "GPT-5"
-      )
-    ) |>
-    select(model, type, score),
-  bluff_results |>
-    filter(type != "baseline") |>
-    select(model, type, score)
-) |>
+bluff_results_combined |>
   mutate(
     type = fct_relevel(type, "baseline", "intuitive", "mocked") |>
       fct_recode(
@@ -206,9 +202,9 @@ bind_rows(
   scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
   scale_color_manual(
     values = c(
-      "GPT-5" = "#10a37f",
-      "Gemini Pro 2.5" = "#1a56db",
-      "Claude Sonnet 4.5" = "#da7756"
+      "GPT-5.2" = "#10a37f",
+      "Gemini 2.5 Pro" = "#1a56db",
+      "Claude Opus 4.5" = "#da7756"
     )
   ) +
   labs(
@@ -221,9 +217,9 @@ bind_rows(
   theme(axis.text.x = element_markdown())
 ``` 
 
-Note that the intuitive condition is more realistic, so improving accuracy there matters more to us than in the mocked condition.
+These results are contained in `bluffbench::bluff_results`.^[`bluff_results` was updated to contain results for Gemini 3 Pro, not Gemini 2.5 Pro. However, Gemini 3 Pro had a specific issue where it often created its own synthetic datasets to plot instead of plotting the provided data, and so we don't think the accuracy numbers reflect Gemini 3 Pro's actual abilities.]
 
-We also tested a condition where the models only saw the plot image, without writing the code themselves. Performance was similar (Claude Sonnet 4.5: `r get_image_acc("Claude Sonnet 4.5")`%, Gemini Pro 2.5: `r get_image_acc("Gemini Pro 2.5")`%, GPT-5: `r get_image_acc("GPT-5")`%). 
+We also tested a condition where the models only saw the plot image, without writing the code themselves. Claude Opus 4.5 and Gemini 2.5 Pro actually performed better with just the image, while GPT-5.2 performed similarly (Claude Opus 4.5: `r get_image_acc("Claude Opus 4.5")`%, Gemini 2.5 Pro: `r get_image_acc("Gemini 2.5 Pro")`%, GPT-5.2: `r get_image_acc("GPT-5.2")`%).
 
 Although it's possible that models are partially relying on non-pattern information like axis labels to inform their interpretation of the plot, the results suggest that LLMs are capable of accurately interpreting plots when their prior knowledge isn't contradicted.
 
@@ -231,22 +227,22 @@ The interpretation issues seen in adversarial bluffbench conditions are therefor
 
 ## What we tried
 
-After establishing this baseline, we continued to try several interventions. So far, interventions like prompting and having a separate model pre-interpret the plot have had only limited success. Here are a few fixes we tried:
+After establishing this baseline, we continued to try several interventions. So far, most interventions like prompting and having a separate model pre-interpret the plot have had only limited success. Here are a few fixes we tried:
 
-**Memo prompt:** We prompt the model to first write a memo (contained in `MEMO` tags) to themselves describing just the visual elements of the plot, acting as if they had no prior knowledge of the data or subject matter and ignoring axis labels. After this memo, they could write their final interpretation of the plot, using whatever knowledge they wanted. You can see the exact prompt [here](<!--TODO Add link when PR is merged-->). 
+**Memo prompt:** We prompt the model to first write a memo (contained in `MEMO` tags) to themselves describing just the visual elements of the plot, acting as if they had no prior knowledge of the data or subject matter and ignoring axis labels. After this memo, they could write their final interpretation of the plot, using whatever knowledge they wanted. You can see the exact prompt [here](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/prompt-memo.md). 
 
-**Extended thinking:** We [built on the memo prompt](<!-- TODO Add link -->), but added language to prompt the models to use more extended thinking. 
+**Extended thinking:** We [built on the memo prompt](https://github.com/simonpcouch/bluffbench/blob/678a54e62f1907bd378551eb51d59e1817ad168d/inst/run/logs/thinking/run_eval.R#L8), but added language to prompt the models to use more extended thinking. 
 
 Neither prompting technique, nor others we tried, had much success, so we attempted a more structural intervention next. 
 
-**Model-in-the-middle:** First, a separate model instance (the _model in the middle_) describes the plot, [ignoring information like axis labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md). That description is then given to the primary model, which uses it to form its final description of the plot. The model-in-the-middle and the primary model are always the same LLM (i.e., if testing Claude Sonnet 4.5, both are Claude Sonnet 4.5).
+**Model-in-the-middle:** First, a separate model instance (the _model-in-the-middle_) describes the plot, [ignoring information like axis labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md). That description is then given to the primary model, which uses it to form its final description of the plot. The model-in-the-middle and the primary model are always the same LLM (i.e., if testing Claude Opus 4.5, both are Claude Opus 4.5).
 
-Although each intervention improved performance above no intervention, none improved performance enough that we would be comfortable relying on the model to interpret plots that contradict the model's expectations.
+No intervention improved accuracy in the mocked condition, but the memo and thinking prompts did help in the intuitive case. The memo prompt in particular increased performance to `r get_intervention_acc("Memo prompt", "intuitive")`%, which is promising. 
 
 ```{r intervention-comparison}
 #| fig-width: 11
 #| fig-height: 5
-#| fig-alt: "Lollipop chart comparing intervention performance on mocked datasets. All interventions show low accuracy."
+#| fig-alt: "Bar chart comparing intervention performance on mocked datasets. All interventions show low accuracy."
 # Calculate accuracy for each intervention by type
 intervention_accuracy <- intervention_results |>
   filter(type %in% c("intuitive", "mocked")) |>
@@ -255,9 +251,9 @@ intervention_accuracy <- intervention_results |>
     .by = c(intervention, type)
   )
 
-# Get no-intervention baseline from bluff_results for Claude
+# Get no-intervention baseline from bluff_results for Claude Opus 4.5
 no_intervention_accuracy <- bluff_results |>
-  filter(model == "Claude Sonnet 4.5", type %in% c("intuitive", "mocked")) |>
+  filter(model == "Claude Opus 4.5", type %in% c("intuitive", "mocked")) |>
   summarize(pct_correct = mean(score == "C"), .by = type) |>
   mutate(intervention = "None")
 
@@ -289,15 +285,15 @@ bind_rows(intervention_accuracy, no_intervention_accuracy) |>
   labs(
     x = "Accuracy",
     y = NULL,
-    title = "Interventions show limited improvement"
+    title = "Various interventions run with Claude Opus 4.5",
+    subtitle = "No improvement in mocked condition, some improvement for intuitive"
   )
 ```
 
 ## Models can overcome priors
 
-Although the model-in-the-middle (MITM) _approach_ was not particularly effective, the actual plot interpretations from the MITM were relatively accurate. The MITM was instructed to ignore information like axis labels and outside context and focus solely on the visual patterns in the plot, and this prompt produced relatively good descriptions. 
+Although the model-in-the-middle (MITM) _approach_ was not particularly effective, the actual plot interpretations from the MITM were relatively accurate. The MITM was instructed to ignore information like axis labels and outside context and focus solely on the visual patterns in the plot, and this prompt produced relatively good descriptions. However, the primary model typically doubted or flat out ignored the MITM's descriptions.
 
-However, the primary model typically doubted or flat out ignored the MITM's descriptions.
 
 ```{r mitm-comparison}
 #| fig-width: 9
@@ -325,7 +321,7 @@ bind_rows(mitm_helper_summary, mitm_primary_summary) |>
     x = NULL,
     y = "Accuracy",
     title = "Same model, different context",
-    subtitle = "The MITM, instructed to ignore other context, is much more accurate than the primary model."
+    subtitle = "On mocked samples, the MITM is much more accurate than the primary model."
   )
 ```
 
@@ -345,9 +341,11 @@ Instead, we want the model to update its beliefs based on new visual information
 
 ## What this means for now
 
-The scenarios in bluffbench are adversarial by design. We deliberately created datasets that contradict with the LLM's presumed priors. In everyday use, conflicts this stark may be rare, and users typically provide context that can help the model understand what's going on. For example, if you tell the LLM that you modified `diamonds`, it's more likely to interpret the plot accurately. Unlike in our evaluation, real users aren't typically trying to trick the model. 
+**When plots don't contradict the LLMs' expectations, they can accurately interpret plots, and prompting models to ignore other context improves their accuracy.** These results indicate that the issues seen in bluffbench are **not a vision problem.** The challenge is therefore not to improve vision but to convince models to reliably and fluently update their beliefs when visual evidence clashes with what they already "know."
+
+The scenarios in bluffbench are also adversarial by design. We deliberately created datasets that contradict the LLM's presumed priors. In everyday use, conflicts this stark may be rare, and users typically provide context that can help the model understand what's going on. For example, if you tell the LLM that you modified `diamonds`, it's more likely to interpret the plot accurately. Unlike in our evaluation, real users aren't typically trying to trick the model. 
 
 However, the ability to recognize when new evidence contradicts prior beliefs is central to good data science. If LLMs can't reliably update their understanding when a plot contradicts their expectations, they risk providing false information to the user or reinforcing assumptions. For data analysis agents like Databot, this is a capability we need to get right.
 
-We're continuing to investigate this problem. If you'd like to test your own models, [bluffbench](https://github.com/simonpcouch/bluffbench) is available on GitHub.
+We're continuing to investigate this problem and implement solutions. If you'd like to test your own models, [bluffbench](https://github.com/simonpcouch/bluffbench) is available on GitHub.
 
