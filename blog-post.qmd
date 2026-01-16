@@ -236,7 +236,7 @@ After establishing this baseline, we continued to try several interventions. So 
 **Extended thinking:** We [built on the memo prompt](https://github.com/simonpcouch/bluffbench/blob/678a54e62f1907bd378551eb51d59e1817ad168d/inst/run/logs/thinking/run_eval.R#L8), but added language to prompt the models to use more extended thinking. 
 
 
-**Model-in-the-middle:** First, a separate model instance (the _model-in-the-middle_) describes the plot, [ignoring information like axis labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md). That description is then given to the primary model, which uses it to form its final description of the plot. The model-in-the-middle and the primary model are always the same LLM (i.e., if testing Claude Opus 4.5, both are Claude Opus 4.5).
+**Model-in-the-middle:** First, a separate model instance with no access to the conversation history (the _model-in-the-middle_) describes the plot, [ignoring information like axis labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md). That description is then given to the primary model, which uses it to form its final description of the plot. The model-in-the-middle and the primary model are always the same LLM (i.e., if testing Claude Opus 4.5, both are Claude Opus 4.5).
 
 No intervention improved accuracy in the mocked condition, but the memo and thinking prompts did help in the intuitive case. The memo prompt in particular increased performance to `r get_intervention_acc("Memo prompt", "intuitive")`%, which is promising. 
 
