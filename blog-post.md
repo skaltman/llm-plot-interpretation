@@ -1,5 +1,5 @@
 # LLMs interpret plots well, until expectations interfere
-
+Sara Altman, Simon Couch
 
 In [a previous post](https://posit.co/blog/introducing-bluffbench/), we
 discussed the results from
@@ -51,14 +51,15 @@ data-fig-alt="Three example baseline plots showing different relationship types.
 alt="Example baseline condition plots. The datasets are generic to reduce the likelihood the model has expectations about the plots." />
 
 **All three models performed very well on the baseline samples** (Claude
-Opus 4.5: 92%, Gemini 2.5 Pro: 85%, GPT-5.2: 100%). *Intuitive* and
-*mocked* are the two adversarial bluffbench conditions. In the mocked
-condition, models plot known datasets like `diamonds` that we secretly
-manipulated beforehand. The intuitive condition involves novel synthetic
-datasets that the models likely had expectations about (e.g., test
-scores vs. hours spent studying). See the [first bluffbench blog
-post](https://posit.co/blog/introducing-bluffbench/) for more details
-about these conditions.
+Opus 4.5: 92%, Gemini 2.5 Pro: 85%, GPT-5.2: 100%).
+
+*Intuitive* and *mocked* are the two adversarial bluffbench conditions.
+In the mocked condition, models plot known datasets like `diamonds` that
+we secretly manipulated beforehand. The intuitive condition involves
+novel synthetic datasets that the models likely had expectations about
+(e.g., test scores vs. hours spent studying). See the [first bluffbench
+blog post](https://posit.co/blog/introducing-bluffbench/) for more
+details about these conditions.
 
 Note that the intuitive condition is more realistic, so improving
 accuracy there matters more to us than in the mocked condition.
@@ -79,7 +80,7 @@ the results suggest that LLMs are capable of accurately interpreting
 plots when their prior knowledge isn’t contradicted.
 
 The interpretation issues seen in adversarial bluffbench conditions are
-therefore likely **not a visual skill issue.** LLMs are capable of
+therefore likely **not a visual capability issue.** LLMs are capable of
 (mostly) accurately interpreting plots when those plots don’t conflict
 with what they expect to see.[^2] These results also make it unlikely
 the problem is that the images are being encoded or formatted in a way
@@ -104,11 +105,9 @@ You can see the exact prompt
 prompt](https://github.com/simonpcouch/bluffbench/blob/678a54e62f1907bd378551eb51d59e1817ad168d/inst/run/logs/thinking/run_eval.R#L8),
 but added language to prompt the models to use more extended thinking.
 
-Neither prompting technique, nor others we tried, had much success, so
-we attempted a more structural intervention next.
-
-**Model-in-the-middle:** First, a separate model instance (the *model in
-the middle*) describes the plot, [ignoring information like axis
+**Model-in-the-middle:** First, a separate model instance with no access
+to the conversation history (the *model-in-the-middle*) describes the
+plot, [ignoring information like axis
 labels](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/interpret_plot.md).
 That description is then given to the primary model, which uses it to
 form its final description of the plot. The model-in-the-middle and the
@@ -147,6 +146,16 @@ These results reinforce our earlier finding. The issue is not that LLMs
 have trouble “seeing” plots. LLMs actually can interpret plots
 relatively accurately. Problems arise, however, when they need to
 reconcile what they see with what they already believe.
+
+Claude models also allow you to
+[prefill](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prefill-claudes-response)
+the `Assistant` messages with your own content, which allows for greater
+control over the model’s behavior. We tried prefilling with the
+model-in-the-middle’s interpretation. Although the accuracy is higher
+with prefill, it’s mostly due to the model-in-the-middle’s exposition
+living inside the assistant response and the scorer giving credit to
+that text. The main agent still mostly ignores this prefilled context
+when it conflicts with its own interpretation.
 
 ## Why not just ignore prior information?
 

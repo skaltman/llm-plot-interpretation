@@ -333,6 +333,9 @@ For example, in this log below, the MITM correctly describes the negative relati
 
 These results reinforce our earlier finding. The issue is not that LLMs have trouble "seeing" plots. LLMs actually can interpret plots relatively accurately. Problems arise, however, when they need to reconcile what they see with what they already believe.
 
+Claude models also allow you to [prefill](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prefill-claudes-response) the `Assistant` messages with your own content, which allows for greater control over the model's behavior. We tried prefilling with the model-in-the-middle's interpretation. Although the accuracy is higher with prefill, it's mostly due to the model-in-the-middle's exposition living inside the assistant response and the scorer giving credit to that text. The main agent still mostly ignores this prefilled context when it conflicts with its own interpretation.
+
+
 ## Why not just ignore prior information?
 
 The MITM prompt instructs the model to ignore prior knowledge about the data and focus on visual patterns. If that produces accurate descriptions, why not just use that prompt?
