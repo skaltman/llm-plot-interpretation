@@ -1,5 +1,6 @@
 ---
 title: "LLMs interpret plots well, until expectations interfere"
+author: "Sara Altman, Simon Couch"
 format:
   gfm:
     echo: false
