@@ -17,7 +17,7 @@ library(ggtext)
 all_results <- read_rds(here::here("data/all_results.rds"))
 
 # Load Gemini 2.5 Pro results and combine with other models from bluff_results
-gemini_25_results <- read_rds(here::here("data/gemini_25_pro_results.rds"))
+gemini_25_results <- read_rds(here::here("data/gemini_2_5_pro.rds"))
 
 # Create combined bluff_results with Gemini 2.5 Pro instead of Gemini 3 Pro
 bluff_results_combined <- bind_rows(
