@@ -27,10 +27,11 @@ Claude Opus 4.5 (emphasis ours):
 > There’s a **strong positive relationship** between carat (diamond
 > size) and price.
 
-Data analysis agents like Databot partially rely on plot interpretation
-to understand data and provide users with accurate insights, and so it’s
-important to both understand why these errors occur and determine how to
-fix the problem.
+Data analysis agents like
+[Databot](https://positron.posit.co/databot.html) partially rely on plot
+interpretation to understand data and provide users with accurate
+insights, and so it’s important to both understand why these errors
+occur and determine how to fix the problem.
 
 ## How well do LLMs “see” plots?
 
