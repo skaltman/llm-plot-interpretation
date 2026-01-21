@@ -10,7 +10,7 @@ conditions <- c(
   "baseline-clarify-true" = "baseline",
   "baseline-image-only" = "image_only",
   "memo" = "memo",
-  "thinking" = "thinking",
+  "extended-thinking" = "thinking",
   "mitm" = "mitm"
 )
 

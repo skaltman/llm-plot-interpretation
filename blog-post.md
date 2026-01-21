@@ -102,9 +102,8 @@ final interpretation of the plot, using whatever knowledge they wanted.
 You can see the exact prompt
 [here](https://github.com/simonpcouch/bluffbench/blob/main/inst/prompts/prompt-memo.md).
 
-**Extended thinking:** We [built on the memo
-prompt](https://github.com/simonpcouch/bluffbench/blob/678a54e62f1907bd378551eb51d59e1817ad168d/inst/run/logs/thinking/run_eval.R#L8),
-but added language to prompt the models to use more extended thinking.
+**Extended thinking:** We enabled extended thinking for Claude Opus 4.5
+with a 2,000 token budget, as well as used the memo prompt.
 
 **Model-in-the-middle:** First, a separate model instance with no access
 to the conversation history (the *model-in-the-middle*) describes the
