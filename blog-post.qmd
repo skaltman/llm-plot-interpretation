@@ -182,8 +182,6 @@ _Intuitive_ and _mocked_ are the two adversarial bluffbench conditions. In the m
 Note that the intuitive condition is more realistic, so improving accuracy there matters more to us than in the mocked condition.
 
 ```{r bluffbench-all}
-#| fig-width: 7
-#| fig-height: 4.5
 #| fig-alt: "Line chart showing model accuracy dropping across bluffbench conditions. All models perform worse on mocked datasets."
 bluff_results_combined |>
   mutate(
