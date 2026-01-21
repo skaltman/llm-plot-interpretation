@@ -213,7 +213,7 @@ GitHub.
     plotting the provided data, and so we don’t think the accuracy
     numbers reflect Gemini 3 Pro’s actual abilities.
 
-[^2]: Our results are also similar to those in [Vo et
+[^2]: Our results are similar to those in [Vo et
     al. (2025)](https://vlmsarebiased.github.io/), which found that
     models accurately counted elements in images matching their
     expectations (e.g., a dog with four legs), but failed when images
